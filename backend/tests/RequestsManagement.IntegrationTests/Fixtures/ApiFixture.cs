@@ -73,7 +73,8 @@ public sealed class ApiFixture : IAsyncLifetime
         var client = Factory.CreateClient();
         if (user is not null)
         {
-            client.DefaultRequestHeaders.Add("X-User-Name", user);
+            // URL-encoded, as a browser must send it (header values are ASCII).
+            client.DefaultRequestHeaders.Add("X-User-Name", Uri.EscapeDataString(user));
         }
 
         return client;

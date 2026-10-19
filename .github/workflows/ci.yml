@@ -85,6 +85,25 @@ jobs:
           echo "Requests: $count"
           test "$count" = "100000"
 
+      - name: API on 100,000 requests (smoke test and response times)
+        run: |
+          for url in \
+            "/api/requests" \
+            "/api/requests?status=Waiting&priority=High&pageSize=50" \
+            "/api/requests?search=%D7%94%D7%99%D7%AA%D7%A8" \
+            "/api/requests?page=500&pageSize=100&sortBy=title&sortDirection=asc" \
+            "/api/requests/summary" \
+            "/api/requests/summary?priority=High" \
+            "/api/lookups"; do
+            code=$(curl -s -o /dev/null -w "%{http_code} %{time_total}s" "http://localhost:5080$url")
+            echo "::notice title=API::$url -> $code"
+            case "$code" in 200*) ;; *) exit 1 ;; esac
+          done
+
+      - name: 409 demo script (as in the README)
+        shell: pwsh
+        run: ./scripts/demo-409.ps1
+
       - name: Reseed is repeatable
         run: |
           docker compose run --rm seeder --reseed

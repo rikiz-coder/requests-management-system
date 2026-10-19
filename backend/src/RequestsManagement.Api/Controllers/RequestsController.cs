@@ -14,8 +14,6 @@ namespace RequestsManagement.Api.Controllers;
 [Produces("application/json")]
 public sealed class RequestsController(RequestQueryService queries, RequestCommandService commands) : ControllerBase
 {
-    public const string UserHeader = "X-User-Name";
-
     /// <summary>List of requests: filtering, search, sorting and paging – all in the database.</summary>
     [HttpGet]
     [ProducesResponseType<PagedResult<RequestListItemDto>>(StatusCodes.Status200OK)]
@@ -64,7 +62,7 @@ public sealed class RequestsController(RequestQueryService queries, RequestComma
         int id,
         [FromBody] UpdateStatusRequest body,
         [FromHeader(Name = "If-Match")] string? ifMatch,
-        [FromHeader(Name = UserHeader)] string? userName,
+        [FromHeader(Name = UserHeader.Name)] string? userName,
         CancellationToken cancellationToken)
     {
         var precondition = EntityTags.ParseIfMatch(ifMatch);
@@ -85,7 +83,7 @@ public sealed class RequestsController(RequestQueryService queries, RequestComma
         }
 
         var updated = await commands.UpdateStatusAsync(
-            new UpdateStatusCommand(id, body.NewStatus, precondition.Version, userName ?? string.Empty),
+            new UpdateStatusCommand(id, body.NewStatus, precondition.Version, UserHeader.Decode(userName)),
             cancellationToken);
 
         Response.Headers.ETag = EntityTags.Format(updated.Version);
@@ -102,7 +100,7 @@ public sealed class RequestsController(RequestQueryService queries, RequestComma
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     public Task<BulkUpdateStatusResult> BulkUpdateStatus(
         [FromBody] BulkUpdateStatusRequest body,
-        [FromHeader(Name = UserHeader)] string? userName,
+        [FromHeader(Name = UserHeader.Name)] string? userName,
         CancellationToken cancellationToken) =>
-        commands.BulkUpdateStatusAsync(new BulkUpdateStatusCommand(body, userName ?? string.Empty), cancellationToken);
+        commands.BulkUpdateStatusAsync(new BulkUpdateStatusCommand(body, UserHeader.Decode(userName)), cancellationToken);
 }

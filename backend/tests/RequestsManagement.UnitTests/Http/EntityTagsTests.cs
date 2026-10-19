@@ -35,3 +35,15 @@ public class EntityTagsTests
     public void Format_quotes_the_version() =>
         Assert.Equal("\"AAAAAAAAB9E=\"", EntityTags.Format("AAAAAAAAB9E="));
 }
+
+public class UserHeaderTests
+{
+    [Theory]
+    [InlineData("%D7%93%D7%A0%D7%94", "דנה")]   // encodeURIComponent("דנה")
+    [InlineData("Dana", "Dana")]
+    [InlineData("  Dana  ", "Dana")]
+    [InlineData(null, "")]
+    [InlineData("100%", "100%")]               // not valid encoding: kept as is
+    public void Decodes_url_encoded_names(string? header, string expected) =>
+        Assert.Equal(expected, UserHeader.Decode(header));
+}
