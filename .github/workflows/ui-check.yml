@@ -1,0 +1,42 @@
+# Drives the full system in Chromium (Playwright) and commits screenshots + observations.
+# Push a branch named tools/ui-<anything>.
+name: UI check
+
+on:
+  push:
+    branches: ['tools/ui-*']
+
+permissions:
+  contents: write
+
+jobs:
+  ui:
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.head_commit.message, '[ui screenshots]') }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Start the system
+        run: |
+          docker compose up -d --build
+          for i in $(seq 1 60); do curl -fsS http://localhost:8080/health >/dev/null 2>&1 && break; sleep 5; done
+
+      - name: Playwright
+        run: |
+          mkdir -p /tmp/pw && cd /tmp/pw && npm init -y >/dev/null && npm i playwright@1 >/dev/null
+          npx playwright install --with-deps chromium >/dev/null
+          cp "$GITHUB_WORKSPACE/scripts/ui/screenshots.mjs" .
+          cd "$GITHUB_WORKSPACE" && node /tmp/pw/screenshots.mjs docs/screenshots
+          cat docs/screenshots/observations.md
+          while IFS= read -r line; do echo "::notice title=UI::${line:0:900}"; done < <(grep '^\*' docs/screenshots/observations.md)
+
+      - name: Commit screenshots
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/screenshots
+          git commit -m "UI screenshots [ui screenshots]"
+          git push
