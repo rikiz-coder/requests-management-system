@@ -35,8 +35,8 @@ await step('search-debounce', async () => {
   page.on('request', (r) => r.url().includes('/api/requests?') && listCalls.push(r.url()));
   page.on('requestfailed', (r) => r.url().includes('/api/requests') && cancelled.push(r.failure()?.errorText));
   const box = page.locator('app-request-filters input[type="search"]');
-  await box.click();
-  await box.pressSequentially('היתר', { delay: 80 });
+  await box.focus();
+  await page.keyboard.type('היתר', { delay: 80 });
   await page.waitForTimeout(1500);
   note(`Typing "היתר" (4 keys, 80ms apart) sent ${listCalls.length} list request(s): ${listCalls.map((u) => decodeURIComponent(u.split('?')[1])).join(' | ')}`);
   note(`URL after search: ${decodeURIComponent(page.url())}`);
@@ -101,7 +101,7 @@ await step('bulk', async () => {
   const id = (await rows().nth(1).locator('td').nth(1).innerText()).trim();
   const etag = execSync(`curl -si ${BASE}/api/requests/${id} | grep -i '^etag:' | cut -d' ' -f2 | tr -d '\\r'`).toString().trim();
   execSync(`curl -s -o /dev/null -X PATCH ${BASE}/api/requests/${id}/status -H 'If-Match: ${etag}' -H 'X-User-Name: Other' -H 'Content-Type: application/json' -d '{"newStatus":"Waiting"}'`);
-  await page.locator('app-bulk-actions-bar .mat-mdc-select-trigger').click();
+  await page.locator('app-bulk-actions-bar .mat-mdc-select-trigger').click({ force: true });
   await page.locator('mat-option', { hasText: 'הושלמה' }).click();
   await page.locator('app-bulk-actions-bar button', { hasText: 'עדכון כל הנבחרות' }).click();
   await page.locator('mat-dialog-container').waitFor({ timeout: 10000 });
