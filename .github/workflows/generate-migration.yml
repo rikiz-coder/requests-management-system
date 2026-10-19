@@ -17,17 +17,21 @@ jobs:
       run:
         working-directory: backend
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v5
         with:
           global-json-file: backend/global.json
+
+      - name: Restore
+        run: |
+          dotnet tool restore
+          ../.github/scripts/run.sh dotnet restore RequestsManagement.sln
 
       - name: Add migration
         run: |
           name="${GITHUB_REF_NAME#tools/migration-}"
-          dotnet tool restore
-          dotnet ef migrations add "$name" \
+          ../.github/scripts/run.sh dotnet ef migrations add "$name" \
             --project src/RequestsManagement.Infrastructure \
             --startup-project src/RequestsManagement.Api \
             --output-dir Persistence/Migrations

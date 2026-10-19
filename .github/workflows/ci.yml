@@ -17,34 +17,34 @@ jobs:
       run:
         working-directory: backend
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v5
         with:
           global-json-file: backend/global.json
 
       - name: Restore
-        run: dotnet restore RequestsManagement.sln
+        run: ../.github/scripts/run.sh dotnet restore RequestsManagement.sln
 
       - name: Build
-        run: dotnet build RequestsManagement.sln -c Release --no-restore
+        run: ../.github/scripts/run.sh dotnet build RequestsManagement.sln -c Release --no-restore
 
       - name: Migrations match the model
         run: |
           dotnet tool restore
-          dotnet ef migrations has-pending-model-changes \
+          ../.github/scripts/run.sh dotnet ef migrations has-pending-model-changes \
             --project src/RequestsManagement.Infrastructure \
             --startup-project src/RequestsManagement.Api \
             --configuration Release --no-build
 
       - name: Tests (integration tests run against SQL Server in Docker via Testcontainers)
-        run: dotnet test RequestsManagement.sln -c Release --no-build --logger "console;verbosity=normal"
+        run: ../.github/scripts/run.sh dotnet test RequestsManagement.sln -c Release --no-build --logger "console;verbosity=normal"
 
   compose:
     name: Docker Compose – SQL Server, 100,000 requests, API
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Build and start
         run: docker compose up -d --build
