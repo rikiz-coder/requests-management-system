@@ -23,14 +23,15 @@ public class SeedingTests(SqlServerFixture sql)
             .ToListAsync(ct);
 
         Assert.Equal(
-            [
+            new[]
+            {
                 "IX_Requests_AssignedTo_Status",
                 "IX_Requests_CreatedAt",
                 "IX_Requests_OrganizationName",
                 "IX_Requests_Priority_Status",
                 "IX_Requests_Status_CreatedAt",
                 "IX_RequestStatusHistory_RequestId_ChangedAt",
-            ],
+            }.Order(StringComparer.Ordinal),
             indexes.Order(StringComparer.Ordinal));
     }
 

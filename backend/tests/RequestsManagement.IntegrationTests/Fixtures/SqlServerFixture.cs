@@ -16,7 +16,7 @@ public sealed class SqlServerFixture : IAsyncLifetime
 {
     public const string Image = "mcr.microsoft.com/mssql/server:2022-latest";
 
-    private readonly MsSqlContainer _container = new MsSqlBuilder().WithImage(Image).Build();
+    private readonly MsSqlContainer _container = new MsSqlBuilder(Image).Build();
 
     public string ConnectionString { get; private set; } = string.Empty;
 
