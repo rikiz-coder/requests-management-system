@@ -2,5 +2,10 @@
   <!-- Business logic: entities, rules, contracts and services. No EF Core and no ASP.NET Core here. -->
   <ItemGroup>
     <PackageReference Include="FluentValidation" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="RequestsManagement.UnitTests" />
   </ItemGroup>
 </Project>

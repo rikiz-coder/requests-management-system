@@ -1,3 +1,5 @@
+using RequestsManagement.Application.Requests.Exceptions;
+
 namespace RequestsManagement.Application.Requests.Entities;
 
 /// <summary>
@@ -31,4 +33,28 @@ public class ServiceRequest
     public byte[] RowVersion { get; set; } = [];
 
     public List<RequestStatusHistory> StatusHistory { get; } = [];
+
+    /// <summary>
+    /// Moves the request to <paramref name="newStatus"/> and records the change in its history.
+    /// Throws <see cref="InvalidStatusTransitionException"/> when the transition is not allowed.
+    /// </summary>
+    public void ChangeStatus(RequestStatus newStatus, string changedBy, DateTime changedAtUtc)
+    {
+        if (!StatusTransitions.IsAllowed(Status, newStatus))
+        {
+            throw new InvalidStatusTransitionException(Id, Status, newStatus);
+        }
+
+        StatusHistory.Add(new RequestStatusHistory
+        {
+            RequestId = Id,
+            PreviousStatus = Status,
+            NewStatus = newStatus,
+            ChangedAt = changedAtUtc,
+            ChangedBy = changedBy,
+        });
+
+        Status = newStatus;
+        UpdatedAt = changedAtUtc;
+    }
 }
