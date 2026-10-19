@@ -48,6 +48,14 @@ await step('search-debounce', async () => {
   await shot('02-search');
 });
 
+await step('search-by-number', async () => {
+  await page.goto(`${BASE}/?search=99236&id=99236`);
+  await rows().first().waitFor();
+  await page.locator('app-request-details .details h3').waitFor();
+  note(`Search "99236": ${await rows().count()} row(s), first: ${(await rows().first().innerText()).replace(/\s+/g, ' ')}; paginator: ${await page.locator('.mat-mdc-paginator-range-label').innerText()}`);
+  await shot('09-search-by-number');
+});
+
 await step('summary-filter-and-reload', async () => {
   await page.goto(BASE);
   await rows().first().waitFor();
