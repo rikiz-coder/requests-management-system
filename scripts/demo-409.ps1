@@ -25,8 +25,15 @@ function Invoke-Api([string]$Method, [string]$Path, [hashtable]$Headers = @{}, [
         $response = Invoke-WebRequest @params
         return [pscustomobject]@{ Status = [int]$response.StatusCode; Body = $response.Content; Headers = $response.Headers }
     } catch {
-        $status = [int]$_.Exception.Response.StatusCode
-        return [pscustomobject]@{ Status = $status; Body = $_.ErrorDetails.Message; Headers = @{} }
+        $response = $_.Exception.Response
+        $body = $_.ErrorDetails.Message
+        # Windows PowerShell 5.1 does not always fill ErrorDetails: read the body from the response stream.
+        if ([string]::IsNullOrEmpty($body) -and $response -and ($response | Get-Member -Name GetResponseStream)) {
+            $reader = New-Object System.IO.StreamReader($response.GetResponseStream(), [Text.Encoding]::UTF8)
+            $body = $reader.ReadToEnd()
+            $reader.Dispose()
+        }
+        return [pscustomobject]@{ Status = [int]$response.StatusCode; Body = $body; Headers = @{} }
     }
 }
 
@@ -61,4 +68,4 @@ $noEtag = Invoke-Api PATCH "/api/requests/$Id/status" @{ 'X-User-Name' = 'Yossi'
 Write-Host ''
 Write-Host "Without If-Match:   HTTP $($noEtag.Status)"
 
-if ($dana.Status -ne 200 -or $yossi.Status -ne 409 -or $noEtag.Status -ne 428) { exit 1 }
+if ($dana.Status -ne 200 -or $yossi.Status -ne 409 -or $noEtag.Status -ne 428 -or -not ($yossi.Body -match '"changedBy":"Dana"')) { exit 1 }
