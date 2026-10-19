@@ -70,23 +70,24 @@
 | ChangedAt | `datetime2(3)` UTC |
 | ChangedBy | `nvarchar(100)` |
 
-### אינדקסים מתוכננים (יאומתו במדידה ב־T7.1)
+### אינדקסים (גרסה ראשונה – ממומשת ב־Migration; תכוונן לפי המדידה ב־T7.1)
 | אינדקס | עמודות | תרחיש שהוא משרת |
 |---|---|---|
-| `IX_Requests_Status_CreatedAt` | (Status, CreatedAt DESC) INCLUDE (Priority, AssignedTo, Title, OrganizationName, UpdatedAt) | המסך הראשי: סינון לפי סטטוס עם מיון ברירת מחדל לפי תאריך יצירה, ו־Aggregation לפי סטטוס |
+| `IX_Requests_Status_CreatedAt` | (Status, CreatedAt DESC) INCLUDE (Priority) | סינון לפי סטטוס עם מיון ברירת מחדל (החדשות קודם), ו־Aggregation לפי סטטוס ועדיפות |
+| `IX_Requests_CreatedAt` | (CreatedAt DESC) | הרשימה ללא סינון ממוינת לפי תאריך, וטווח תאריכים |
 | `IX_Requests_AssignedTo_Status` | (AssignedTo, Status) | "הפניות של מטפל X" |
-| `IX_Requests_OrganizationName` | (OrganizationName) | סינון שוויון לפי ארגון, ו־Lookup של רשימת הארגונים |
-| `IX_Requests_CreatedAt` | (CreatedAt) | טווח תאריכים בלי סינון סטטוס |
-| `IX_Requests_Priority_Status` | (Priority, Status) | Aggregation לפי עדיפות, וסינון לפי עדיפות |
-| `IX_History_RequestId_ChangedAt` | (RequestId, ChangedAt DESC) | היסטוריית פנייה |
+| `IX_Requests_OrganizationName` | (OrganizationName) | סינון לפי ארגון, ו־Lookup של רשימת הארגונים |
+| `IX_Requests_Priority_Status` | (Priority, Status) | סינון ו־Aggregation לפי עדיפות |
+| `IX_RequestStatusHistory_RequestId_ChangedAt` | (RequestId, ChangedAt DESC) | היסטוריית פנייה, ו"מי שינה אחרון" בתשובת 409 |
 
-אינדקסים שלא יוכיחו תועלת במדידה יוסרו. המטרה היא סט מינימלי ומנומק, לא אינדקס לכל עמודה.
+אינדקסים שלא יוכיחו תועלת במדידה יוסרו. המטרה היא סט מינימלי ומנומק, לא אינדקס לכל עמודה. בגרסה הראשונה האינדקסים צרים בכוונה (בלי עמודות טקסט ב־INCLUDE): העמוד המבוקש הוא עד 100 שורות, ו־Key Lookup עבורן זול. המדידה תאשר או תפריך את זה.
 
 ### Seeder (נתוני בדיקה)
 - 100,000 פניות. כ־500 ארגונים, כ־30 מטפלים, תאריכים מפוזרים על פני שנתיים, והתפלגות סטטוסים ועדיפויות לא אחידה (מציאותית).
 - **דטרמיניסטי** (`Random` עם Seed קבוע), כך שכל הרצה מייצרת אותם נתונים ואפשר להשוות מדידות.
-- **יצירה חוזרת:** הפקודה מנקה את הטבלאות (`TRUNCATE`/`DELETE`) ומייצרת מחדש. כתיבה ב־`SqlBulkCopy` לוקחת שניות ולא דקות.
-- הרצה: `docker compose run --rm seeder`, או `dotnet run --project tools/RequestsManagement.Seeder -- --count 100000`.
+- **היסטוריה עקבית:** לכל פנייה שאינה "חדשה" נוצרת היסטוריה שעוברת רק במעברים מותרים ומסתיימת בסטטוס הנוכחי, ו־`UpdatedAt` שווה לזמן השינוי האחרון.
+- **יצירה חוזרת:** הפקודה מנקה את הטבלאות ומייצרת מחדש. כתיבה ב־`SqlBulkCopy` לוקחת שניות ולא דקות, ואחריה בנייה מחדש של האינדקסים ועדכון סטטיסטיקות.
+- הרצה: ב־`docker compose up` הראשון הנתונים נוצרים אוטומטית (אם בסיס הנתונים ריק). יצירה מחדש: `docker compose run --rm seeder --reseed` (אפשר להוסיף `--count 250000`).
 
 ---
 
@@ -247,18 +248,18 @@ X-User-Name: dana
 ### E0 – תכנון והקמה
 | ID | משימה | מה נדרש | תוצר | תלוי ב־ | מאמץ | דרישה | סטטוס |
 |---|---|---|---|---|---|---|---|
-| T0.1 | ניתוח אפיון ותוכנית עבודה | פירוק הדרישות, החלטות ושאלות פתוחות | `PLAN.md` | – | 2h | 9 | 🔄 |
-| T0.2 | שלד README | מבנה ה־README בסגנון "מדריך לבודק" (ראו T8.1), עם טיוטת ההחלטות הטכנולוגיות והחלופות | `README.md` ראשוני | T0.1 | 1h | 11 | ⬜ |
-| T0.3 | הקמת Repo ו־Solution | שלוש שכבות (Api, Application, Infrastructure) עם כיוון תלויות נכון, `.editorconfig`, `.gitignore`, `Directory.Build.props` | Solution שעובר Build | T0.1 | 2h | 10 | ⬜ |
-| T0.4 | שלד Docker ו־CI | `docker-compose` עם SQL Server, ו־GitHub Actions ל־Build ו־Test | Pipeline ירוק | T0.3 | 2h | הגשה | ⬜ |
+| T0.1 | ניתוח אפיון ותוכנית עבודה | פירוק הדרישות, החלטות ושאלות פתוחות | `PLAN.md` | – | 2h | 9 | ✅ |
+| T0.2 | שלד README | מבנה ה־README בסגנון "מדריך לבודק" (ראו T8.1), עם טיוטת ההחלטות הטכנולוגיות והחלופות | `README.md` ראשוני | T0.1 | 1h | 11 | ✅ |
+| T0.3 | הקמת Repo ו־Solution | שלוש שכבות (Api, Application, Infrastructure) עם כיוון תלויות נכון, `.editorconfig`, `.gitignore`, `Directory.Build.props` | Solution שעובר Build | T0.1 | 2h | 10 | ✅ |
+| T0.4 | שלד Docker ו־CI | `docker-compose` עם SQL Server, ו־GitHub Actions ל־Build ו־Test | Pipeline ירוק | T0.3 | 2h | הגשה | ✅ |
 | T0.5 | סביבת הרצה מקומית ב־Windows | סקריפט התקנה (WSL 2, Git, Docker Desktop, .NET 10 SDK, Node LTS), סקריפט אימות, ומדריך התקנה והרצה בעברית | `scripts/setup-windows.ps1`, `scripts/verify-windows.ps1`, `docs/INSTALL.he.md`, ומחשב המפתחת מוכן להרצה | T0.1 | 1.5h | 11, הגשה | ✅ |
 
 ### E1 – בסיס נתונים ונתוני בדיקה
 | ID | משימה | מה נדרש | תוצר | תלוי ב־ | מאמץ | דרישה | סטטוס |
 |---|---|---|---|---|---|---|---|
-| T1.1 | תכנון מודל ואינדקסים | טבלאות, טיפוסים, אינדקסים מנומקים | סעיף 2 במסמך, ERD | T0.1 | 1.5h | מבנה פנייה, 6 | ✅ (טיוטה) |
-| T1.2 | Entities, DbContext ו־Migration | Entities ב־Application, ו־Configurations ב־Infrastructure: `rowversion`, Enums כ־tinyint, אינדקסים | Migration ראשון שרץ | T0.3, T1.1 | 2h | מבנה פנייה, 2 | ⬜ |
-| T1.3 | Seeder של 100 אלף רשומות | דטרמיניסטי, `SqlBulkCopy`, ניתן להרצה חוזרת | פקודת Seed שמסיימת בשניות | T1.2 | 3h | יצירת נתונים | ⬜ |
+| T1.1 | תכנון מודל ואינדקסים | טבלאות, טיפוסים, אינדקסים מנומקים | סעיף 2 במסמך, ERD | T0.1 | 1.5h | מבנה פנייה, 6 | ✅ |
+| T1.2 | Entities, DbContext ו־Migration | Entities ב־Application, ו־Configurations ב־Infrastructure: `rowversion`, Enums כ־tinyint, אינדקסים | Migration ראשון שרץ | T0.3, T1.1 | 2h | מבנה פנייה, 2 | ✅ |
+| T1.3 | Seeder של 100 אלף רשומות | דטרמיניסטי, `SqlBulkCopy`, ניתן להרצה חוזרת | פקודת Seed שמסיימת בשניות | T1.2 | 3h | יצירת נתונים | ✅ |
 
 ### E2 – API שליפה
 | ID | משימה | מה נדרש | תוצר | תלוי ב־ | מאמץ | דרישה | סטטוס |
@@ -272,7 +273,7 @@ X-User-Name: dana
 ### E3 – עדכון, Concurrency ו־Audit
 | ID | משימה | מה נדרש | תוצר | תלוי ב־ | מאמץ | דרישה | סטטוס |
 |---|---|---|---|---|---|---|---|
-| T3.1 | כללי מעבר סטטוס | מכונת מצבים ב־Domain | `StatusTransitions` עם בדיקות | T1.2 | 1h | 2 | ⬜ |
+| T3.1 | כללי מעבר סטטוס | מכונת מצבים ב־Domain | `StatusTransitions` עם בדיקות | T1.2 | 1h | 2 | ✅ |
 | T3.2 | עדכון סטטוס | `If-Match` (428/400), ‏404/400/422, ‏409 עם `currentState` ו־`lastChange`, RowVersion, `UpdatedAt`, Audit באותה טרנזקציה, Logging | `PATCH /{id}/status` | T3.1, T2.1 | 4h | 2, 3 | ⬜ |
 | T3.3 | היסטוריית שינויים | שליפה ממוינת לפי תאריך | `GET /{id}/history` | T3.2 | 1h | 3 | ⬜ |
 | T3.4 | Bulk (Partial Success) | ולידציה (עד 100, ללא כפילויות), טעינה בשאילתה אחת, שמירה לכל פריט, תוצאה מפורטת | `POST /bulk/status` | T3.2 | 3h | 4 | ⬜ |
@@ -297,7 +298,7 @@ X-User-Name: dana
 | ID | משימה | מה נדרש | תוצר | תלוי ב־ | מאמץ | דרישה | סטטוס |
 |---|---|---|---|---|---|---|---|
 | T6.1 | Unit Tests | מעברי סטטוס, ולידציה של Query ושל Bulk | xUnit | T3.1, T2.2 | 1.5h | 8 | ⬜ |
-| T6.2 | תשתית Integration | `WebApplicationFactory` עם **Testcontainers** (SQL Server אמיתי) | Fixture משותף | T1.2, T2.1 | 2h | 8 | ⬜ |
+| T6.2 | תשתית Integration | `WebApplicationFactory` עם **Testcontainers** (SQL Server אמיתי) | Fixture משותף | T1.2, T2.1 | 2h | 8 | 🔄 (Fixture מוכן, בדיקות Seeding רצות) |
 | T6.3 | Integration Tests | (1) סינון ודפדוף תקינים (2) 404 (3) **Concurrency: שני עדכונים עם אותו `If-Match`, אחד מקבל 200 והשני 409 עם `lastChange`, ונשמרת שורת היסטוריה אחת** (4) `If-Match` חסר מחזיר 428 (5) Bulk חלקי (6) Invalidation של Cache | בדיקות ירוקות ב־CI | T6.2, T3.4, T4.1 | 3.5h | 8 | ⬜ |
 | T6.4 | בדיקות Angular | Store: `debounce`, `switchMap` וסנכרון URL. טיפול ב־409 בממשק | בדיקות לקוח | T5.2 | 1h | 8 | ⬜ |
 
@@ -369,7 +370,7 @@ flowchart LR
 | נושא | מצב / פתרון |
 |---|---|
 | ChangedBy בלי הזדהות | ✅ הוחלט: `X-User-Name` (סעיף 4), מתועד כמגבלה ידועה |
-| **סביבת הבנייה של Claude** | בסביבת הענן הנוכחית אין גישה להורדת ‎.NET SDK, NuGet, npm ו־Images של Docker. פתרון: כל Push ל־GitHub מריץ Build ו־Tests ב־**GitHub Actions** (מאמת את הקוד, וגם מראה לבודקים CI ירוק), ואת מריצה מקומית עם Docker Desktop (מדריך: `docs/INSTALL.he.md`). חלופה: לאפשר את הדומיינים האלה בהגדרות (Settings → Capabilities) |
+| **סביבת הבנייה של Claude** | ✅ נפתר: בסביבת הענן אין גישה ל־NuGet, npm ו־Docker Hub, ולכן כל Push ל־GitHub מריץ ב־**GitHub Actions** את ה־Build, הבדיקות והרצת Docker Compose מלאה עם 100,000 פניות. Migrations נוצרות ב־workflow ייעודי (`generate-migration.yml`). את מריצה מקומית עם Docker Desktop |
 | חשבון GitHub | ✅ `rikiz-coder/requests-management-system` (ציבורי), מחובר ומאפשר Push |
 | SQL Server על מחשבי Mac עם ARM | ה־Image רץ באמולציה. יתועד ב־README |
 | מועד הגשה | סוף השבוע. כל המשימות, כולל T6.4, נכנסות לתוכנית |

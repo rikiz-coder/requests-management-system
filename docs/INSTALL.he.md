@@ -2,7 +2,7 @@
 
 המדריך מסביר איך להתקין את כל מה שצריך במחשב Windows, להוריד את הפרויקט, להריץ אותו ולבדוק אותו.
 
-> **הערה:** סעיפים 4–7 (הרצה, כתובות ובדיקות) מתארים את המבנה המתוכנן. כתובת ה־repo והפורטים הסופיים יעודכנו כשהקוד יעלה ל־GitHub.
+> **הערה:** הממשק (Angular) יתווסף בשלב ד'. כל השאר כבר עובד ונבדק אוטומטית ב־CI בכל שינוי.
 
 ---
 
@@ -86,28 +86,30 @@ cd requests-management-system
 
 כל הפקודות מורצות מתיקיית הפרויקט, כש־Docker Desktop פתוח ומציג Engine running.
 
-1. **הרמת המערכת** (DB, API וממשק). בפעם הראשונה זה לוקח כמה דקות, בגלל הורדת ה־Images:
+1. **הרמת המערכת:**
    ```powershell
    docker compose up -d --build
    ```
-2. **יצירת נתוני הבדיקה** (100,000 פניות). אפשר להריץ שוב בכל עת: הפקודה מוחקת את הנתונים ומייצרת אותם מחדש, ותמיד אותם נתונים:
+   בפעם הראשונה זה לוקח כמה דקות: הורדת ה־Images, בניית השרת, הקמת בסיס הנתונים ויצירת 100,000 פניות. בהרצות הבאות זה מהיר, והנתונים נשמרים.
+2. **בדיקה שהכול עלה:**
    ```powershell
-   docker compose run --rm seeder
+   docker compose ps -a
    ```
-3. **בדיקה שהכול עלה:**
+   ‏`sqlserver` צריך להיות `healthy`, ‏`api` במצב `running`, ו־`seeder` במצב `exited (0)`. ‏`exited (0)` אומר שהוא סיים בהצלחה, וזה תקין: הוא רץ פעם אחת ונעצר.
+3. **יצירה מחדש של נתוני הבדיקה** (מוחק הכול ויוצר מחדש, תמיד אותם נתונים):
    ```powershell
-   docker compose ps
+   docker compose run --rm seeder --reseed
    ```
-   כל השירותים צריכים להיות במצב `running` או `healthy`.
 
 ### כתובות
 | מה | כתובת |
 |---|---|
-| ממשק המשתמש (Angular) | http://localhost:8080 |
+| ממשק המשתמש (Angular) | http://localhost:8080 (יתווסף בשלב ד') |
 | תיעוד ה־API (Swagger) | http://localhost:5080/swagger |
-| SQL Server (ל־SSMS) | שרת: `localhost,14333` · משתמש: `sa` · סיסמה: מופיעה בקובץ `.env` |
+| בדיקת תקינות של ה־API | http://localhost:5080/health (מחזיר `Healthy`) |
+| SQL Server (ל־SSMS) | שרת: `localhost,14333` · משתמש: `sa` · סיסמה: `Requests_Dev_Passw0rd!` |
 
-> SQL Server ממופה לפורט 14333 ולא לפורט הרגיל 1433, כדי לא להתנגש ב־SQL Server מקומי אם מותקן אחד.
+> SQL Server ממופה לפורט 14333 ולא לפורט הרגיל 1433, כדי לא להתנגש ב־SQL Server מקומי אם מותקן אחד. הסיסמה מיועדת לפיתוח מקומי בלבד.
 
 ### עצירה וניקוי
 ```powershell
@@ -119,36 +121,26 @@ docker compose down -v     # עוצר ומוחק גם את הנתונים
 
 ## 6. הרצת הבדיקות האוטומטיות
 
-הבדיקות דורשות .NET 10 SDK, ו־Docker פתוח: בדיקות ה־Integration מרימות SQL Server זמני משלהן.
+הבדיקות דורשות ‎.NET 10 SDK, ו־Docker פתוח: בדיקות ה־Integration מרימות SQL Server זמני משלהן.
 
 ```powershell
 cd backend
 dotnet test
 ```
 
-בדיקות ה־Angular (אם קיימות):
-```powershell
-cd frontend\requests-web
-npm ci
-npm test
-```
+בדיקות ה־Angular יתווספו בשלב ד'.
 
 ---
 
-## 7. הרצה במצב פיתוח (רשות, ללא Docker ל־API ולממשק)
+## 7. הרצה במצב פיתוח (רשות, השרת מחוץ ל־Docker)
 
 ```powershell
-# DB בלבד ב-Docker
-docker compose up -d sqlserver
+# SQL Server ונתוני הבדיקה ב-Docker
+docker compose up -d sqlserver seeder
 
-# API
+# ה-API (בחלון נוסף) – http://localhost:5080/swagger
 cd backend
 dotnet run --project src\RequestsManagement.Api
-
-# ממשק (בחלון נוסף)
-cd frontend\requests-web
-npm ci
-npm start      # http://localhost:4200
 ```
 
 ---
@@ -165,7 +157,7 @@ npm start      # http://localhost:4200
 | Docker Desktop מציג "Virtualization support not detected" | מפעילים וירטואליזציה ב־BIOS (Intel VT-x / AMD-V, לפעמים בשם SVM) |
 | `docker` / `dotnet` / `node` לא מזוהים אחרי ההתקנה (או `[MISSING]` בסקריפט הבדיקה) | החלון נפתח לפני ההתקנה ולא מכיר את התוכנות החדשות. סוגרים את **כל** חלונות PowerShell ופותחים חלון חדש. אם זה לא עוזר, מתנתקים ומתחברים מחדש ל־Windows |
 | "permission denied" / "docker-users" | מתנתקים ומתחברים מחדש ל־Windows. הסקריפט הוסיף אותך לקבוצה, וזה נכנס לתוקף רק אחרי התחברות מחדש |
-| "port is already allocated" | פורט תפוס על ידי תוכנה אחרת. משנים את הפורט בקובץ `.env` ומריצים שוב `docker compose up -d` |
-| ה־API לא עולה ובלוג מופיע "Login failed" | SQL Server עוד לא סיים לעלות. ממתינים כחצי דקה ומריצים `docker compose restart api` |
+| "port is already allocated" | פורט תפוס על ידי תוכנה אחרת. יוצרים ליד `docker-compose.yml` קובץ `.env` עם `SQL_PORT=14334` או `API_PORT=5081`, ומריצים שוב `docker compose up -d` |
+| ה־API לא עולה, או `seeder` לא במצב `exited (0)` | `docker compose logs seeder` מציג מה קרה. בדרך כלל SQL Server עוד לא סיים לעלות: ממתינים חצי דקה ומריצים שוב `docker compose up -d` |
 | SQL Server נופל מיד | לא הוקצה מספיק זיכרון. ב־Docker Desktop: Settings ← Resources, מוודאים 4GB לפחות |
 | הצגת לוגים של שירות | `docker compose logs -f api` (או `sqlserver` / `web`) |
