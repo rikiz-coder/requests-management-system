@@ -57,7 +57,9 @@ import { SummaryPanelComponent } from './summary-panel.component';
   `,
   styles: `
     :host { display: block; height: 100%; }
-    .container { height: 100%; background: transparent; overflow: hidden; }
+    /* clip (not hidden): the closed drawer sits outside the viewport, and 'hidden' still lets focus or
+       scrollIntoView scroll the container sideways – 'clip' forbids any scrolling. */
+    .container { height: 100%; background: transparent; overflow: clip; }
     .content { display: flex; flex-direction: column; gap: 16px; padding: 16px 24px; overflow-x: hidden; }
     .drawer { width: min(460px, 92vw); }
   `,
