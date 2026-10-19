@@ -1,0 +1,38 @@
+# Developer tool: generates the Angular workspace with the official CLI on a CI runner and commits it.
+# Push a branch named tools/angular-scaffold.
+name: Scaffold Angular app
+
+on:
+  push:
+    branches: ['tools/angular-scaffold']
+
+permissions:
+  contents: write
+
+jobs:
+  scaffold:
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.head_commit.message, '[generated scaffold]') }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: ng new + Angular Material
+        working-directory: frontend
+        run: |
+          npx -y @angular/cli@21 new requests-web --defaults --style=scss --ssr=false --skip-git \
+            --package-manager=npm --zoneless --ai-config=none
+          cd requests-web
+          npx ng add @angular/material@21 --skip-confirmation --defaults
+          echo "::notice title=Versions::$(node -p "const p=require('./package.json'); JSON.stringify({...p.dependencies, ...p.devDependencies})")"
+
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add frontend
+          git commit -m "Angular workspace generated with the Angular CLI [generated scaffold]"
+          git push
