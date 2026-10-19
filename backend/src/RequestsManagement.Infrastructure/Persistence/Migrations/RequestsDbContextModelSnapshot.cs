@@ -100,19 +100,23 @@ namespace RequestsManagement.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex(new[] { "AssignedTo", "Status" }, "IX_Requests_AssignedTo_Status");
+                    b.HasIndex(new[] { "AssignedTo", "CreatedAt", "Id" }, "IX_Requests_AssignedTo_CreatedAt_Id")
+                        .IsDescending(false, true, true);
 
-                    b.HasIndex(new[] { "CreatedAt" }, "IX_Requests_CreatedAt")
+                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex(new[] { "AssignedTo", "CreatedAt", "Id" }, "IX_Requests_AssignedTo_CreatedAt_Id"), new[] { "Status" });
+
+                    b.HasIndex(new[] { "CreatedAt", "Id" }, "IX_Requests_CreatedAt_Id")
                         .IsDescending();
 
-                    b.HasIndex(new[] { "OrganizationName" }, "IX_Requests_OrganizationName");
+                    b.HasIndex(new[] { "OrganizationName", "CreatedAt", "Id" }, "IX_Requests_OrganizationName_CreatedAt_Id")
+                        .IsDescending(false, true, true);
 
                     b.HasIndex(new[] { "Priority", "Status" }, "IX_Requests_Priority_Status");
 
-                    b.HasIndex(new[] { "Status", "CreatedAt" }, "IX_Requests_Status_CreatedAt")
-                        .IsDescending(false, true);
+                    b.HasIndex(new[] { "Status", "CreatedAt", "Id" }, "IX_Requests_Status_CreatedAt_Id")
+                        .IsDescending(false, true, true);
 
-                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex(new[] { "Status", "CreatedAt" }, "IX_Requests_Status_CreatedAt"), new[] { "Priority" });
+                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex(new[] { "Status", "CreatedAt", "Id" }, "IX_Requests_Status_CreatedAt_Id"), new[] { "Priority" });
 
                     b.ToTable("Requests", (string)null);
                 });
