@@ -106,6 +106,15 @@ await step('bulk', async () => {
   await page.locator('app-bulk-actions-bar button', { hasText: 'עדכון כל הנבחרות' }).click();
   await page.locator('mat-dialog-container').waitFor({ timeout: 10000 });
   await page.waitForTimeout(600);
+  const layout = await page.evaluate(() => {
+    const scrolled = [...document.querySelectorAll('*')].filter((e) => e.scrollLeft !== 0)
+      .map((e) => `${e.tagName.toLowerCase()}.${[...e.classList].join('.')} scrollLeft=${e.scrollLeft} scrollWidth=${e.scrollWidth} clientWidth=${e.clientWidth}`);
+    const wide = [...document.querySelectorAll('app-requests-page *')].filter((e) => {
+      const r = e.getBoundingClientRect(); return r.width > 0 && (r.left < -2 || r.right > window.innerWidth + 2);
+    }).slice(0, 8).map((e) => { const r = e.getBoundingClientRect(); return `${e.tagName.toLowerCase()}.${[...e.classList].slice(0, 3).join('.')} [${Math.round(r.left)}..${Math.round(r.right)}]`; });
+    return { scrolled, wide, docScroll: document.scrollingElement.scrollLeft };
+  });
+  note(`Layout check: ${JSON.stringify(layout)}`);
   note(`Bulk result: ${(await page.locator('mat-dialog-container').innerText()).replace(/\s+/g, ' ')}`);
   await shot('06-bulk-result');
   await page.keyboard.press('Escape');
