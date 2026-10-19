@@ -23,10 +23,10 @@ jobs:
       - name: ng new + Angular Material
         run: |
           mkdir -p frontend && cd frontend
-          npx -y @angular/cli@21 new requests-web --defaults --style=scss --ssr=false --skip-git \
+          ../.github/scripts/run.sh npx -y @angular/cli@21 new requests-web --defaults --style=scss --ssr=false --skip-git \
             --package-manager=npm --zoneless --ai-config=none
           cd requests-web
-          npx ng add @angular/material@21 --skip-confirmation --defaults
+          ../../.github/scripts/run.sh npx ng add @angular/material@21 --skip-confirmation --defaults
           echo "::notice title=Versions::$(node -p "const p=require('./package.json'); JSON.stringify({...p.dependencies, ...p.devDependencies})")"
 
       - name: Commit
