@@ -168,5 +168,6 @@ npm start
 | "permission denied" / "docker-users" | מתנתקים ומתחברים מחדש ל־Windows. הסקריפט הוסיף אותך לקבוצה, וזה נכנס לתוקף רק אחרי התחברות מחדש |
 | "port is already allocated" | פורט תפוס על ידי תוכנה אחרת. יוצרים ליד `docker-compose.yml` קובץ `.env` עם `SQL_PORT=14334` או `API_PORT=5081`, ומריצים שוב `docker compose up -d` |
 | ה־API לא עולה, או `seeder` לא במצב `exited (0)` | `docker compose logs seeder` מציג מה קרה. בדרך כלל SQL Server עוד לא סיים לעלות: ממתינים חצי דקה ומריצים שוב `docker compose up -d` |
+| בניית `web` נכשלת עם "unable to get local issuer certificate" | סינון אינטרנט או אנטי־וירוס בודק את התעבורה המוצפנת, והקונטיינר לא מכיר את התעודה שלו. הבנייה כבר לא מורידה גופנים מהאינטרנט (הדפדפן טוען אותם בזמן הצפייה). אם `npm ci` נכשל באותה שגיאה, צריך לאשר את `registry.npmjs.org` אצל ספק הסינון |
 | SQL Server נופל מיד | לא הוקצה מספיק זיכרון. ב־Docker Desktop: Settings ← Resources, מוודאים 4GB לפחות |
 | הצגת לוגים של שירות | `docker compose logs -f api` (או `sqlserver` / `web`) |
