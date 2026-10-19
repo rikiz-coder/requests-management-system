@@ -22,12 +22,15 @@ jobs:
 
       - name: ng new + Angular Material
         run: |
+          npm install -g npm@11
           mkdir -p frontend && cd frontend
-          ../.github/scripts/run.sh npx -y @angular/cli@21 new requests-web --defaults --style=scss --ssr=false --skip-git \
-            --package-manager=npm --zoneless --ai-config=none
+          ../.github/scripts/run.sh npx -y @angular/cli@21 new requests-web --defaults --style=scss --ssr=false \
+            --skip-git --skip-install --package-manager=npm --zoneless
           cd requests-web
-          ../../.github/scripts/run.sh npx ng add @angular/material@21 --skip-confirmation --defaults
+          ../../.github/scripts/run.sh npm install
+          ../../.github/scripts/run.sh npm install @angular/material@21 @angular/cdk@21
           echo "::notice title=Versions::$(node -p "const p=require('./package.json'); JSON.stringify({...p.dependencies, ...p.devDependencies})")"
+          ls -la; cat angular.json | head -80
 
       - name: Commit
         run: |
