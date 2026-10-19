@@ -34,11 +34,13 @@ SQLCMD = "/opt/mssql-tools18/bin/sqlcmd"
 def sqlcmd(sql: str, password: str) -> str:
     """Runs a script inside the sqlserver container and returns its output (UTF-8)."""
     cmd = ["docker", "compose", "exec", "-T", "sqlserver", SQLCMD, "-S", "localhost", "-U", "sa", "-P", password,
-           "-C", "-I", "-d", "RequestsManagement", "-b", "-y", "0", "-h", "-1", "-f", "65001", "-i", "/dev/stdin"]
+           "-C", "-I", "-d", "RequestsManagement", "-b", "-y", "0", "-f", "65001", "-i", "/dev/stdin"]
     result = subprocess.run(cmd, input=sql.encode("utf-8"), capture_output=True, cwd=ROOT)
     out = result.stdout.decode("utf-8", errors="replace")
     if result.returncode != 0:
-        sys.stderr.write(out + result.stderr.decode("utf-8", errors="replace"))
+        details = (out + result.stderr.decode("utf-8", errors="replace")).strip().splitlines()
+        for line in details[-15:]:
+            print(f"::error::sqlcmd: {line[:500]}")  # visible as a GitHub annotation
         raise RuntimeError(f"sqlcmd failed ({result.returncode})")
     return out
 
