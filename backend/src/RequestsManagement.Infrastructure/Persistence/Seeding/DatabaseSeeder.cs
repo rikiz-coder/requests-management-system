@@ -1,0 +1,147 @@
+using System.Data;
+using System.Diagnostics;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using RequestsManagement.Application.Requests.Entities;
+
+namespace RequestsManagement.Infrastructure.Persistence.Seeding;
+
+/// <summary>
+/// Creates the database schema (migrations) and loads the test data.
+/// Loading uses SqlBulkCopy: 100,000 requests and their history take seconds, not minutes.
+/// </summary>
+public sealed class DatabaseSeeder(RequestsDbContext dbContext, ILogger<DatabaseSeeder> logger)
+{
+    public const int DefaultRequestCount = 100_000;
+
+    private const int BulkCopyBatchSize = 10_000;
+    private const int CommandTimeoutSeconds = 300;
+
+    /// <summary>Applies pending migrations (creates the database on first run).</summary>
+    public async Task MigrateAsync(CancellationToken cancellationToken)
+    {
+        await dbContext.Database.MigrateAsync(cancellationToken);
+        logger.LogInformation("Database schema is up to date");
+    }
+
+    public Task<bool> HasDataAsync(CancellationToken cancellationToken) =>
+        dbContext.Requests.AnyAsync(cancellationToken);
+
+    /// <summary>
+    /// Deletes all requests and history and generates them again. Same seed → same data.
+    /// </summary>
+    public async Task<SeedResult> ReseedAsync(int requestCount, CancellationToken cancellationToken)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(requestCount);
+        var stopwatch = Stopwatch.StartNew();
+
+        var data = new SeedDataGenerator().Generate(requestCount);
+        logger.LogInformation("Generated {Requests} requests and {History} history rows",
+            data.Requests.Count, data.History.Count);
+
+        var connectionString = dbContext.Database.GetConnectionString()
+            ?? throw new InvalidOperationException("The DbContext has no connection string.");
+
+        await using var connection = new SqlConnection(connectionString);
+        await connection.OpenAsync(cancellationToken);
+        await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync(cancellationToken);
+
+        await ExecuteAsync(connection, transaction, """
+            TRUNCATE TABLE dbo.RequestStatusHistory;   -- also restarts its identity at 1
+            DELETE FROM dbo.Requests;                  -- referenced by a foreign key, so no TRUNCATE
+            DBCC CHECKIDENT ('dbo.Requests', RESEED, 0) WITH NO_INFOMSGS;
+            """, cancellationToken);
+
+        // Request ids are generated here (1..N) so that the history rows can reference them.
+        await BulkInsertAsync(connection, transaction, "dbo.Requests", BuildRequestsTable(data.Requests),
+            SqlBulkCopyOptions.KeepIdentity | SqlBulkCopyOptions.TableLock, cancellationToken);
+        await BulkInsertAsync(connection, transaction, "dbo.RequestStatusHistory", BuildHistoryTable(data.History),
+            SqlBulkCopyOptions.TableLock, cancellationToken);
+
+        // Continue the identity after the highest loaded id, so new requests get the next number.
+        await ExecuteAsync(connection, transaction,
+            "DBCC CHECKIDENT ('dbo.Requests', RESEED) WITH NO_INFOMSGS;", cancellationToken);
+
+        await transaction.CommitAsync(cancellationToken);
+
+        // A bulk load leaves the indexes fragmented and the statistics stale; rebuild both so
+        // that performance measurements reflect a normal, maintained database.
+        await ExecuteAsync(connection, null, """
+            ALTER INDEX ALL ON dbo.Requests REBUILD;
+            ALTER INDEX ALL ON dbo.RequestStatusHistory REBUILD;
+            UPDATE STATISTICS dbo.Requests WITH FULLSCAN;
+            UPDATE STATISTICS dbo.RequestStatusHistory WITH FULLSCAN;
+            """, cancellationToken);
+
+        stopwatch.Stop();
+        logger.LogInformation("Seeding finished in {Elapsed:0.0}s", stopwatch.Elapsed.TotalSeconds);
+        return new SeedResult(data.Requests.Count, data.History.Count, stopwatch.Elapsed);
+    }
+
+    private static async Task ExecuteAsync(SqlConnection connection, SqlTransaction? transaction, string sql,
+        CancellationToken cancellationToken)
+    {
+        await using var command = new SqlCommand(sql, connection, transaction) { CommandTimeout = CommandTimeoutSeconds };
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    private static async Task BulkInsertAsync(SqlConnection connection, SqlTransaction transaction, string tableName,
+        DataTable table, SqlBulkCopyOptions options, CancellationToken cancellationToken)
+    {
+        using var bulkCopy = new SqlBulkCopy(connection, options, transaction)
+        {
+            DestinationTableName = tableName,
+            BatchSize = BulkCopyBatchSize,
+            BulkCopyTimeout = CommandTimeoutSeconds,
+        };
+
+        // Map by name: RowVersion (and the history Id) are generated by SQL Server and are not sent.
+        foreach (DataColumn column in table.Columns)
+        {
+            bulkCopy.ColumnMappings.Add(column.ColumnName, column.ColumnName);
+        }
+
+        await bulkCopy.WriteToServerAsync(table, cancellationToken);
+    }
+
+    private static DataTable BuildRequestsTable(IReadOnlyList<ServiceRequest> requests)
+    {
+        var table = new DataTable();
+        table.Columns.Add(nameof(ServiceRequest.Id), typeof(int));
+        table.Columns.Add(nameof(ServiceRequest.Title), typeof(string));
+        table.Columns.Add(nameof(ServiceRequest.OrganizationName), typeof(string));
+        table.Columns.Add(nameof(ServiceRequest.Status), typeof(byte));
+        table.Columns.Add(nameof(ServiceRequest.Priority), typeof(byte));
+        table.Columns.Add(nameof(ServiceRequest.AssignedTo), typeof(string));
+        table.Columns.Add(nameof(ServiceRequest.CreatedAt), typeof(DateTime));
+        table.Columns.Add(nameof(ServiceRequest.UpdatedAt), typeof(DateTime));
+
+        foreach (var r in requests)
+        {
+            table.Rows.Add(r.Id, r.Title, r.OrganizationName, (byte)r.Status, (byte)r.Priority,
+                (object?)r.AssignedTo ?? DBNull.Value, r.CreatedAt, r.UpdatedAt);
+        }
+
+        return table;
+    }
+
+    private static DataTable BuildHistoryTable(IReadOnlyList<RequestStatusHistory> history)
+    {
+        var table = new DataTable();
+        table.Columns.Add(nameof(RequestStatusHistory.RequestId), typeof(int));
+        table.Columns.Add(nameof(RequestStatusHistory.PreviousStatus), typeof(byte));
+        table.Columns.Add(nameof(RequestStatusHistory.NewStatus), typeof(byte));
+        table.Columns.Add(nameof(RequestStatusHistory.ChangedAt), typeof(DateTime));
+        table.Columns.Add(nameof(RequestStatusHistory.ChangedBy), typeof(string));
+
+        foreach (var h in history)
+        {
+            table.Rows.Add(h.RequestId, (byte)h.PreviousStatus, (byte)h.NewStatus, h.ChangedAt, h.ChangedBy);
+        }
+
+        return table;
+    }
+}
+
+public sealed record SeedResult(int Requests, int HistoryRows, TimeSpan Elapsed);

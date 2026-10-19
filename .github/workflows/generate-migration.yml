@@ -1,0 +1,41 @@
+# Developer tool: generates an EF Core migration on a CI runner and commits it back.
+# Push a branch named tools/migration-<Name>; the workflow adds migration <Name> to it.
+name: Generate EF migration
+
+on:
+  push:
+    branches: ['tools/migration-*']
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.head_commit.message, '[generated migration]') }}
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: backend/global.json
+
+      - name: Add migration
+        run: |
+          name="${GITHUB_REF_NAME#tools/migration-}"
+          dotnet tool restore
+          dotnet ef migrations add "$name" \
+            --project src/RequestsManagement.Infrastructure \
+            --startup-project src/RequestsManagement.Api \
+            --output-dir Persistence/Migrations
+
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/RequestsManagement.Infrastructure/Persistence/Migrations
+          git commit -m "Add EF migration ${GITHUB_REF_NAME#tools/migration-} [generated migration]"
+          git push

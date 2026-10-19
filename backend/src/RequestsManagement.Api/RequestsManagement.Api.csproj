@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <!-- HTTP only: controllers, error handling and DI composition. -->
+  <ItemGroup>
+    <ProjectReference Include="..\RequestsManagement.Application\RequestsManagement.Application.csproj" />
+    <ProjectReference Include="..\RequestsManagement.Infrastructure\RequestsManagement.Infrastructure.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Swashbuckle.AspNetCore" />
+    <!-- Needed only by the dotnet-ef tool (this project is the startup project for migrations). -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+</Project>

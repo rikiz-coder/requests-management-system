@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- EF Core / SQL Server implementation of the Application abstractions, migrations and data seeding. -->
+  <ItemGroup>
+    <ProjectReference Include="..\RequestsManagement.Application\RequestsManagement.Application.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="RequestsManagement.UnitTests" />
+    <InternalsVisibleTo Include="RequestsManagement.IntegrationTests" />
+  </ItemGroup>
+</Project>
