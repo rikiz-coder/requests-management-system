@@ -33,8 +33,9 @@ async function setup(dialogResult: 'reload' | 'apply') {
   const fixture = TestBed.createComponent(RequestDetailsComponent);
   fixture.componentRef.setInput('requestId', 5);
   const http = TestBed.inject(HttpTestingController);
+  // HTTP calls keep the app "unstable", so flush them first and only then wait for stability.
   fixture.detectChanges();
-  await fixture.whenStable();
+  TestBed.tick();
   http.expectOne('/api/requests/5').flush(request);
   http.expectOne('/api/requests/5/history').flush([]);
   await fixture.whenStable();
@@ -46,7 +47,7 @@ async function setup(dialogResult: 'reload' | 'apply') {
 
 describe('RequestDetailsComponent – 409 handling', () => {
   it('sends the version in If-Match and, on 409, opens the conflict dialog with who changed it', async () => {
-    const { fixture, http, dialog, component } = await setup('reload');
+    const { http, dialog, component } = await setup('reload');
 
     component.changeStatus(request, 'Completed');
     const patch = http.expectOne('/api/requests/5/status');
@@ -59,7 +60,7 @@ describe('RequestDetailsComponent – 409 handling', () => {
       data: expect.objectContaining({ attempted: 'Completed', problem: expect.objectContaining({ lastChange: conflict.lastChange }) }),
     }));
     // "show the current state" reloads the request – nothing is sent again
-    await fixture.whenStable();
+    TestBed.tick();
     http.expectOne('/api/requests/5').flush(current);
     http.expectOne('/api/requests/5/history').flush([]);
     http.expectNone('/api/requests/5/status');

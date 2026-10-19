@@ -28,7 +28,10 @@ export function errorMessage(error: unknown): string {
   const problem = problemOf(error);
   switch (error.status) {
     case 400: {
-      const fields = Object.keys(problem?.errors ?? {}).map((f) => FIELD_LABELS[f.replace(/\[\d+\].*$/, '')] ?? f);
+      const fields = Object.keys(problem?.errors ?? {}).map((f) => {
+        const name = f.replace(/\[\d+\].*$/, '');
+        return FIELD_LABELS[name] ?? name;
+      });
       return fields.length ? `נתונים לא תקינים: ${[...new Set(fields)].join(', ')}.` : 'הבקשה לא תקינה.';
     }
     case 404:

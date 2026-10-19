@@ -17,7 +17,17 @@ const page = (ids: number[]): PagedResult<RequestListItem> => ({
 const summary: RequestSummary = { total: 0, byStatus: [], byPriority: [] };
 
 /** Search calls stay open until the test completes them, so cancellation can be observed. */
-interface PendingSearch { query: RequestQuery; subscriber: Subscriber<PagedResult<RequestListItem>>; cancelled: boolean }
+interface PendingSearch { query: RequestQuery; subscriber: Subscriber<PagedResult<RequestListItem>>; cancelled: boolean; done: boolean }
+
+function respond(pending: PendingSearch, result: PagedResult<RequestListItem> | Error): void {
+  pending.done = true;
+  if (result instanceof Error) {
+    pending.subscriber.error(result);
+  } else {
+    pending.subscriber.next(result);
+    pending.subscriber.complete();
+  }
+}
 
 function setup(initialParams: Params = {}) {
   const params$ = new BehaviorSubject(convertToParamMap(initialParams));
@@ -33,9 +43,9 @@ function setup(initialParams: Params = {}) {
   const searches: PendingSearch[] = [];
   const api = {
     search: vi.fn((query: RequestQuery) => new Observable<PagedResult<RequestListItem>>((subscriber) => {
-      const pending: PendingSearch = { query, subscriber, cancelled: false };
+      const pending: PendingSearch = { query, subscriber, cancelled: false, done: false };
       searches.push(pending);
-      return () => { if (!subscriber.closed) { pending.cancelled = true; } };
+      return () => { pending.cancelled = !pending.done; }; // unsubscribed before it answered = cancelled
     })),
     summary: vi.fn(() => of(summary)),
   };
@@ -89,22 +99,20 @@ describe('RequestsListStore', () => {
     expect(searches[1].cancelled).toBe(false);
     expect(searches[1].query.status).toEqual(['New']);
 
-    searches[1].subscriber.next(page([7]));
-    searches[1].subscriber.complete();
+    respond(searches[1], page([7]));
     expect(store.list()).toMatchObject({ loading: false, error: null });
     expect(store.list().data?.items.map((i) => i.id)).toEqual([7]);
   });
 
   it('keeps the previous page while loading, and reports an error without losing it', () => {
     const { store, searches } = setup();
-    searches[0].subscriber.next(page([1, 2]));
-    searches[0].subscriber.complete();
+    respond(searches[0], page([1, 2]));
 
     store.setPage(2, 20);
     expect(store.list().loading).toBe(true);
     expect(store.list().data?.items).toHaveLength(2);
 
-    searches[1].subscriber.error(new Error('boom'));
+    respond(searches[1], new Error('boom'));
     expect(store.list().loading).toBe(false);
     expect(store.list().error).toBeInstanceOf(Error);
     expect(store.list().data?.items).toHaveLength(2);

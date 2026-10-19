@@ -6,7 +6,7 @@ const http = (status: number, error: object | null = null) => new HttpErrorRespo
 
 describe('errorMessage', () => {
   it('names the invalid fields in Hebrew', () => {
-    expect(errorMessage(http(400, { errors: { pageSize: ['x'], 'status[0]': ['y'] } }))).toBe('נתונים לא תקינים: גודל עמוד, status.');
+    expect(errorMessage(http(400, { errors: { pageSize: ['x'], 'status[0]': ['y'] } }))).toBe('נתונים לא תקינים: גודל עמוד, סטטוס.');
   });
 
   it('explains a forbidden transition with the allowed statuses', () => {

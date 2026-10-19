@@ -23,6 +23,8 @@ export const OUTCOME_LABELS: Record<BulkOutcome, string> = {
 /** Field names as they appear in API validation errors → Hebrew. */
 export const FIELD_LABELS: Record<string, string> = {
   search: 'חיפוש',
+  status: 'סטטוס',
+  priority: 'עדיפות',
   page: 'עמוד',
   pageSize: 'גודל עמוד',
   createdFrom: 'מתאריך',
