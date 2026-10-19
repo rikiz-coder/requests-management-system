@@ -14,14 +14,14 @@ import { LoadState } from './requests-list.store';
   template: `
     <section class="summary" aria-label="נתונים מסכמים">
       <div class="total">
-        <span class="value">{{ (data()?.total ?? 0) | number }}</span>
+        <span class="value">{{ data() ? (data()!.total | number) : '–' }}</span>
         <span class="label">פניות</span>
       </div>
       <div class="group">
         @for (s of statuses; track s) {
           <button type="button" class="tile status-{{ s }}" [class.active]="activeStatuses().includes(s)"
                   (click)="statusClick.emit(s)" [attr.aria-pressed]="activeStatuses().includes(s)">
-            <span class="value">{{ statusCount(s) | number }}</span>
+            <span class="value">{{ data() ? (statusCount(s) | number) : '–' }}</span>
             <span class="label">{{ statusLabels[s] }}</span>
           </button>
         }
@@ -29,7 +29,7 @@ import { LoadState } from './requests-list.store';
       <div class="group priorities">
         @for (p of priorities; track p) {
           <div class="tile small">
-            <span class="value">{{ priorityCount(p) | number }}</span>
+            <span class="value">{{ data() ? (priorityCount(p) | number) : '–' }}</span>
             <span class="label">עדיפות {{ priorityLabels[p] }}</span>
           </div>
         }

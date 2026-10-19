@@ -130,7 +130,15 @@ internal sealed class SeedDataGenerator
         var time = request.CreatedAt;
         foreach (var next in path)
         {
+            // Up to a week per step; for recent requests a fraction of the time left, so that changes
+            // are spread out before the reference date instead of all landing exactly on it.
             var step = TimeSpan.FromMinutes(_random.Next(10, 60 * 24 * 7));
+            var remaining = ReferenceDate - time;
+            if (step > remaining / 2)
+            {
+                step = TimeSpan.FromMilliseconds(Math.Floor(remaining.TotalMilliseconds * (0.1 + (0.4 * _random.NextDouble()))));
+            }
+
             time = Min(time + step, ReferenceDate);
             history.Add(new RequestStatusHistory
             {

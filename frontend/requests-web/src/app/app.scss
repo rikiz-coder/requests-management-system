@@ -1,5 +1,5 @@
 :host { display: flex; flex-direction: column; height: 100vh; }
-.toolbar { gap: 12px; background: var(--mat-sys-primary-container); color: var(--mat-sys-on-primary-container); }
+.toolbar { height: auto; min-height: 72px; padding-block: 10px; gap: 12px; background: var(--mat-sys-primary-container); color: var(--mat-sys-on-primary-container); }
 .toolbar h1 { font-size: 20px; font-weight: 600; margin: 0; }
 .spacer { flex: 1; }
 .user { width: 220px; }

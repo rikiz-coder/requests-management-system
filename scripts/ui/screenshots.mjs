@@ -34,7 +34,7 @@ await step('search-debounce', async () => {
   const cancelled = [];
   page.on('request', (r) => r.url().includes('/api/requests?') && listCalls.push(r.url()));
   page.on('requestfailed', (r) => r.url().includes('/api/requests') && cancelled.push(r.failure()?.errorText));
-  const box = page.getByRole('searchbox');
+  const box = page.locator('app-request-filters input[type="search"]');
   await box.click();
   await box.pressSequentially('היתר', { delay: 80 });
   await page.waitForTimeout(1500);
@@ -87,6 +87,7 @@ await step('conflict-409', async () => {
   await other.locator('app-request-details .buttons button', { hasText: 'הושלמה' }).click();
   await other.locator('mat-dialog-container').waitFor({ timeout: 10000 });
   note(`409 dialog: ${(await other.locator('mat-dialog-container').innerText()).replace(/\s+/g, ' ')}`);
+  await other.waitForTimeout(600); // dialog open animation
   await shot('05-conflict-dialog', other);
   await other.close();
 });
@@ -100,10 +101,11 @@ await step('bulk', async () => {
   const id = (await rows().nth(1).locator('td').nth(1).innerText()).trim();
   const etag = execSync(`curl -si ${BASE}/api/requests/${id} | grep -i '^etag:' | cut -d' ' -f2 | tr -d '\\r'`).toString().trim();
   execSync(`curl -s -o /dev/null -X PATCH ${BASE}/api/requests/${id}/status -H 'If-Match: ${etag}' -H 'X-User-Name: Other' -H 'Content-Type: application/json' -d '{"newStatus":"Waiting"}'`);
-  await page.locator('app-bulk-actions-bar mat-select').click();
+  await page.locator('app-bulk-actions-bar .mat-mdc-select-trigger').click();
   await page.locator('mat-option', { hasText: 'הושלמה' }).click();
   await page.locator('app-bulk-actions-bar button', { hasText: 'עדכון כל הנבחרות' }).click();
   await page.locator('mat-dialog-container').waitFor({ timeout: 10000 });
+  await page.waitForTimeout(600);
   note(`Bulk result: ${(await page.locator('mat-dialog-container').innerText()).replace(/\s+/g, ' ')}`);
   await shot('06-bulk-result');
   await page.keyboard.press('Escape');
@@ -125,7 +127,7 @@ await step('empty-state', async () => {
     await page.waitForTimeout(2000);
   }
   await page.goto(`${BASE}/?search=${encodeURIComponent('אין-כזה-דבר')}`);
-  await page.locator('td.message').waitFor();
+  await page.locator('td.message', { hasText: 'לא נמצאו' }).waitFor();
   note(`Empty state: ${(await page.locator('td.message').innerText()).trim()}`);
   await shot('08-empty');
 });
