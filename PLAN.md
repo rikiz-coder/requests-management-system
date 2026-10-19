@@ -106,7 +106,7 @@
 | GET | `/api/lookups` | רשימות מטפלים וארגונים לטופסי הסינון ולבחירת "משתמש נוכחי" | 200 |
 
 ### פרמטרים של `GET /api/requests`
-`page` (ברירת מחדל 1, מינימום 1) · `pageSize` (ברירת מחדל 25, טווח 1–100) · `status` (רשימה, למשל `status=New&status=Waiting`) · `priority` (רשימה) · `organizationName` · `assignedTo` · `createdFrom` / `createdTo` (ובתנאי `createdFrom <= createdTo`) · `search` (עד 100 תווים) · `sortBy` ∈ {`createdAt`, `updatedAt`, `priority`, `status`, `title`} · `sortDir` ∈ {`asc`, `desc`}
+`page` (ברירת מחדל 1, טווח 1–100,000) · `pageSize` (ברירת מחדל 20, טווח 1–100) · `status` (רשימה, למשל `status=New&status=Waiting`) · `priority` (רשימה) · `organizationName` (מתחיל ב־) · `assignedTo` (שם מדויק) · `createdFrom` / `createdTo` (ובתנאי `createdFrom <= createdTo`) · `search` (עד 100 תווים) · `sortBy` ∈ {`createdAt`, `updatedAt`, `priority`, `status`, `title`, `organizationName`} · `sortDirection` ∈ {`asc`, `desc`}
 
 - מיון יציב: תמיד מתווסף `Id` כ־Tie-breaker, כדי שדפים לא "יקפצו".
 - `sortBy` עובר Whitelist ולא נבנה כטקסט חופשי, כך שאין חשש ל־SQL Injection.
@@ -155,7 +155,7 @@ X-User-Name: dana
 - `outcome` ∈ {`Updated`, `NotFound`, `Conflict`, `InvalidTransition`}.
 - כאן הגרסה נמצאת בגוף הבקשה, לכל פריט בנפרד: כותרת `If-Match` אחת לא יכולה לשאת 100 גרסאות.
 - תשובת **400** על הבקשה כולה: יותר מ־100 פריטים, רשימה ריקה, או מזהים כפולים.
-- מימוש: טוענים את כל הפניות בשאילתה אחת. כל פריט נשמר בנפרד יחד עם רשומת ה־Audit שלו, בטרנזקציה קטנה משלו. כך כישלון של פריט אחד לא מבטל את האחרים.
+- מימוש: טוענים את כל הפניות בשאילתה אחת, ובודקים כל פריט לחוד (לא קיים, גרסה לא עדכנית, מעבר אסור). כל הפריטים התקינים נשמרים יחד בטרנזקציה אחת, כל אחד עם שורת ה־Audit שלו ועם בדיקת הגרסה שלו. אם פנייה השתנתה בין הקריאה לכתיבה, בסיס הנתונים דוחה את הטרנזקציה: מוציאים רק את הפנייה הזו (תוצאה `Conflict`) ושומרים שוב את השאר. כל סבב מוציא לפחות פנייה אחת, כך שהלולאה תמיד מסתיימת. (בתכנון המקורי: טרנזקציה לכל פריט. השינוי חוסך עד 100 סבבים מול בסיס הנתונים, עם אותה התנהגות כלפי הלקוח.)
 - התשובה היא 200 גם כשחלק מהפריטים נכשלו, כי הבקשה עובדה בהצלחה והתוצאה לכל פריט מופיעה בגוף התשובה. 207 Multi-Status הוא חלופה שתתועד.
 
 ---
@@ -173,7 +173,7 @@ X-User-Name: dana
 מעבר לאותו סטטוס נחשב מעבר לא חוקי ומחזיר 422. הכללים נמצאים במקום אחד ב־Domain (`StatusTransitions`), והשרת מחזיר `allowedNextStatuses` בכל פנייה, כך שה־UI מציג רק מעברים מותרים ולא מחזיק עותק משלו של הכללים.
 
 ### זהות המשנה (ChangedBy)
-המבדק לא דורש מערכת התחברות. ה־UI מציג בחירת "משתמש נוכחי" מתוך רשימת המטפלים, ושולח את השם בכותרת `X-User-Name` בכל עדכון. השרת מוודא שהכותרת קיימת (אחרת 400) ושומר אותה ב־Audit. זו מגבלה ידועה שתתועד ב־README: בסביבת אמת הזהות תילקח מטוקן הזדהות (JWT) ולא מהלקוח.
+המבדק לא דורש מערכת התחברות. ה־UI מציג בחירת "משתמש נוכחי" מתוך רשימת המטפלים, ושולח את השם בכותרת `X-User-Name` בכל עדכון. ערכי כותרות HTTP הם ASCII בלבד, ולכן שם בעברית נשלח מקודד (`encodeURIComponent`), והשרת מפענח אותו. השרת מוודא שהכותרת קיימת (אחרת 400) ושומר אותה ב־Audit. זו מגבלה ידועה שתתועד ב־README: בסביבת אמת הזהות תילקח מטוקן הזדהות (JWT) ולא מהלקוח.
 
 ### תהליך העדכון
 1. הלקוח שולח ב־`If-Match` את ה־`ETag` שקיבל בשליפה (ערך ה־`rowversion`).
@@ -264,24 +264,24 @@ X-User-Name: dana
 ### E2 – API שליפה
 | ID | משימה | מה נדרש | תוצר | תלוי ב־ | מאמץ | דרישה | סטטוס |
 |---|---|---|---|---|---|---|---|
-| T2.1 | תשתית API | DI ו־Lifetimes, `AddProblemDetails` ו־`IExceptionHandler`, Logging, OpenAPI/Swagger, טיפול ב־`ETag`/`If-Match` | API עולה, שגיאות כ־ProblemDetails | T0.3 | 3h | 10 | ⬜ |
-| T2.2 | DTOs, Mapping ו־Validation | מודל Query, ולידטורים (FluentValidation), Mapping ידני ומרוכז | Validation עקבי ו־400 ברור | T2.1, T1.2 | 2h | 1, 10 | ⬜ |
-| T2.3 | שירות ו־Repository לשליפה | סינון משולב, חיפוש, מיון Whitelist, דפדוף, `AsNoTracking`, Projection, `CancellationToken` | `GET /api/requests` | T2.2 | 3h | 1 | ⬜ |
-| T2.4 | פנייה בודדת ו־Lookups | `GET /{id}` עם `ETag`, `allowedNextStatuses` ו־404, ו־`GET /api/lookups` | שני Endpoints | T2.3, T3.1 | 1.5h | 1, 2 | ⬜ |
-| T2.5 | Aggregations | ספירה לפי סטטוס ולפי עדיפות, עם אותם סינונים | `GET /summary` | T2.3 | 1.5h | 1 | ⬜ |
+| T2.1 | תשתית API | DI ו־Lifetimes, `AddProblemDetails` ו־`IExceptionHandler`, Logging, OpenAPI/Swagger, טיפול ב־`ETag`/`If-Match` | API עולה, שגיאות כ־ProblemDetails | T0.3 | 3h | 10 | ✅ |
+| T2.2 | DTOs, Mapping ו־Validation | מודל Query, ולידטורים (FluentValidation), Mapping ידני ומרוכז | Validation עקבי ו־400 ברור | T2.1, T1.2 | 2h | 1, 10 | ✅ |
+| T2.3 | שירות ו־Repository לשליפה | סינון משולב, חיפוש, מיון Whitelist, דפדוף, `AsNoTracking`, Projection, `CancellationToken` | `GET /api/requests` | T2.2 | 3h | 1 | ✅ |
+| T2.4 | פנייה בודדת ו־Lookups | `GET /{id}` עם `ETag`, `allowedNextStatuses` ו־404, ו־`GET /api/lookups` | שני Endpoints | T2.3, T3.1 | 1.5h | 1, 2 | ✅ |
+| T2.5 | Aggregations | ספירה לפי סטטוס ולפי עדיפות, עם אותם סינונים | `GET /summary` | T2.3 | 1.5h | 1 | ✅ |
 
 ### E3 – עדכון, Concurrency ו־Audit
 | ID | משימה | מה נדרש | תוצר | תלוי ב־ | מאמץ | דרישה | סטטוס |
 |---|---|---|---|---|---|---|---|
 | T3.1 | כללי מעבר סטטוס | מכונת מצבים ב־Domain | `StatusTransitions` עם בדיקות | T1.2 | 1h | 2 | ✅ |
-| T3.2 | עדכון סטטוס | `If-Match` (428/400), ‏404/400/422, ‏409 עם `currentState` ו־`lastChange`, RowVersion, `UpdatedAt`, Audit באותה טרנזקציה, Logging | `PATCH /{id}/status` | T3.1, T2.1 | 4h | 2, 3 | ⬜ |
-| T3.3 | היסטוריית שינויים | שליפה ממוינת לפי תאריך | `GET /{id}/history` | T3.2 | 1h | 3 | ⬜ |
-| T3.4 | Bulk (Partial Success) | ולידציה (עד 100, ללא כפילויות), טעינה בשאילתה אחת, שמירה לכל פריט, תוצאה מפורטת | `POST /bulk/status` | T3.2 | 3h | 4 | ⬜ |
+| T3.2 | עדכון סטטוס | `If-Match` (428/400), ‏404/400/422, ‏409 עם `currentState` ו־`lastChange`, RowVersion, `UpdatedAt`, Audit באותה טרנזקציה, Logging | `PATCH /{id}/status` | T3.1, T2.1 | 4h | 2, 3 | ✅ |
+| T3.3 | היסטוריית שינויים | שליפה ממוינת לפי תאריך | `GET /{id}/history` | T3.2 | 1h | 3 | ✅ |
+| T3.4 | Bulk (Partial Success) | ולידציה (עד 100, ללא כפילויות), טעינה בשאילתה אחת, שמירה לכל פריט, תוצאה מפורטת | `POST /bulk/status` | T3.2 | 3h | 4 | ✅ |
 
 ### E4 – Cache
 | ID | משימה | מה נדרש | תוצר | תלוי ב־ | מאמץ | דרישה | סטטוס |
 |---|---|---|---|---|---|---|---|
-| T4.1 | Cache ל־Summary | `ISummaryCache`, Expiration של 60 שניות, Invalidation בעדכון בודד וב־Bulk | Summary מהיר ותמיד עדכני | T2.5, T3.2, T3.4 | 1.5h | 7 | ⬜ |
+| T4.1 | Cache ל־Summary | `ISummaryCache`, Expiration של 60 שניות, Invalidation בעדכון בודד וב־Bulk | Summary מהיר ותמיד עדכני | T2.5, T3.2, T3.4 | 1.5h | 7 | ✅ |
 
 ### E5 – Angular
 | ID | משימה | מה נדרש | תוצר | תלוי ב־ | מאמץ | דרישה | סטטוס |
@@ -297,9 +297,9 @@ X-User-Name: dana
 ### E6 – בדיקות אוטומטיות
 | ID | משימה | מה נדרש | תוצר | תלוי ב־ | מאמץ | דרישה | סטטוס |
 |---|---|---|---|---|---|---|---|
-| T6.1 | Unit Tests | מעברי סטטוס, ולידציה של Query ושל Bulk | xUnit | T3.1, T2.2 | 1.5h | 8 | ⬜ |
-| T6.2 | תשתית Integration | `WebApplicationFactory` עם **Testcontainers** (SQL Server אמיתי) | Fixture משותף | T1.2, T2.1 | 2h | 8 | 🔄 (Fixture מוכן, בדיקות Seeding רצות) |
-| T6.3 | Integration Tests | (1) סינון ודפדוף תקינים (2) 404 (3) **Concurrency: שני עדכונים עם אותו `If-Match`, אחד מקבל 200 והשני 409 עם `lastChange`, ונשמרת שורת היסטוריה אחת** (4) `If-Match` חסר מחזיר 428 (5) Bulk חלקי (6) Invalidation של Cache | בדיקות ירוקות ב־CI | T6.2, T3.4, T4.1 | 3.5h | 8 | ⬜ |
+| T6.1 | Unit Tests | מעברי סטטוס, ולידציה של Query ושל Bulk | xUnit | T3.1, T2.2 | 1.5h | 8 | ✅ |
+| T6.2 | תשתית Integration | `WebApplicationFactory` עם **Testcontainers** (SQL Server אמיתי) | Fixture משותף | T1.2, T2.1 | 2h | 8 | ✅ |
+| T6.3 | Integration Tests | (1) סינון ודפדוף תקינים (2) 404 (3) **Concurrency: שני עדכונים עם אותו `If-Match`, אחד מקבל 200 והשני 409 עם `lastChange`, ונשמרת שורת היסטוריה אחת** (4) `If-Match` חסר מחזיר 428 (5) Bulk חלקי (6) Invalidation של Cache | בדיקות ירוקות ב־CI | T6.2, T3.4, T4.1 | 3.5h | 8 | ✅ |
 | T6.4 | בדיקות Angular | Store: `debounce`, `switchMap` וסנכרון URL. טיפול ב־409 בממשק | בדיקות לקוח | T5.2 | 1h | 8 | ⬜ |
 
 ### E7 – ביצועים
