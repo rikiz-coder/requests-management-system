@@ -7,7 +7,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSortModule, Sort, SortDirection as MatSortDirection } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 
-import { PagedResult, RequestListItem, RequestQuery, SortField } from '../../core/api/models';
+import { PagedResult, RequestListItem, RequestPriority, RequestQuery, SortField } from '../../core/api/models';
 import { errorMessage } from '../../core/http/error-messages';
 import { PRIORITY_LABELS } from '../../core/i18n/labels';
 import { StatusBadgeComponent } from '../../shared/status-badge.component';
@@ -62,7 +62,7 @@ import { LoadState } from './requests-list.store';
         </ng-container>
         <ng-container matColumnDef="priority">
           <th mat-header-cell *matHeaderCellDef mat-sort-header>עדיפות</th>
-          <td mat-cell *matCellDef="let r" [class.high]="r.priority === 'High'">{{ priorityLabels[r.priority] }}</td>
+          <td mat-cell *matCellDef="let r" [class.high]="r.priority === 'High'">{{ priorityLabel(r.priority) }}</td>
         </ng-container>
         <ng-container matColumnDef="assignedTo">
           <th mat-header-cell *matHeaderCellDef>מטפל</th>
@@ -122,7 +122,6 @@ export class RequestsTableComponent {
   protected readonly columns = ['select', 'id', 'title', 'organizationName', 'status', 'priority', 'assignedTo',
     'createdAt', 'updatedAt'];
   protected readonly pageSizes = PAGE_SIZES;
-  protected readonly priorityLabels = PRIORITY_LABELS;
 
   protected readonly items = computed(() => this.state().data?.items ?? []);
   protected readonly matDirection = computed<MatSortDirection>(() => this.query().sortDirection);
@@ -134,6 +133,10 @@ export class RequestsTableComponent {
   protected readonly someSelected = computed(
     () => !this.allSelected() && this.items().some((i) => this.selection().has(i.id)),
   );
+
+  protected priorityLabel(priority: RequestPriority): string {
+    return PRIORITY_LABELS[priority];
+  }
 
   protected onSort(sort: Sort): void {
     this.sortChange.emit({ sortBy: sort.active as SortField, sortDirection: sort.direction === 'asc' ? 'asc' : 'desc' });
