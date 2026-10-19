@@ -67,6 +67,6 @@ export function toQueryParams(patch: Partial<RequestQuery> & { id?: number | nul
   return params;
 }
 
-export function sameValue(a: unknown, b: unknown): boolean {
+export function sameValue<T>(a: T, b: T): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
 }
