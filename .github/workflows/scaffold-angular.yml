@@ -21,8 +21,8 @@ jobs:
           node-version: 22
 
       - name: ng new + Angular Material
-        working-directory: frontend
         run: |
+          mkdir -p frontend && cd frontend
           npx -y @angular/cli@21 new requests-web --defaults --style=scss --ssr=false --skip-git \
             --package-manager=npm --zoneless --ai-config=none
           cd requests-web
