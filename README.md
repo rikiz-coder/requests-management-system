@@ -32,7 +32,7 @@ docker compose up -d --build
 
 | מה | כתובת |
 |---|---|
-| ממשק המשתמש | http://localhost:8080 (בשלב הבא) |
+| **ממשק המשתמש** | **http://localhost:8080** |
 | Swagger (תיעוד ה־API) | http://localhost:5080/swagger |
 | בדיקת תקינות | http://localhost:5080/health |
 | SQL Server (ל־SSMS) | `localhost,14333` · משתמש `sa` · סיסמה `Requests_Dev_Passw0rd!` |
@@ -48,7 +48,22 @@ docker compose run --rm seeder --reseed --count 250000  # כמות אחרת
 
 ### מסלול בדיקה בממשק
 
-בשלב הבא: טבלה של מה עושים, מה אמור לקרות ואיזו דרישה זה מדגים.
+| # | מה עושים | מה אמור לקרות | דרישה |
+|---|---|---|---|
+| 1 | פותחים את http://localhost:8080 | 100,000 פניות, 20 בעמוד, החדשות קודם; למעלה – סיכום לפי סטטוס ועדיפות | 1, 5 |
+| 2 | מקלידים "היתר" בחיפוש, עם DevTools ← Network פתוח | בקשה אחת אחרי שמפסיקים להקליד (350ms). בקשה קודמת שעוד רצה מסומנת `(canceled)`. הרשימה והסיכום מתעדכנים יחד | 1, 5 |
+| 3 | לוחצים על "ממתינה" בסיכום, ממיינים לפי עמודה, עוברים לעמוד 2 ולוחצים F5 | הסינון, המיון והעמוד נשמרים בכתובת, והרענון מציג אותה תצוגה | 1, 5 |
+| 4 | לוחצים על פנייה | נפתחת מגירה: פרטים, כפתורים רק למעברים המותרים, והיסטוריה | 2, 3 |
+| 5 | **409:** מעתיקים את הכתובת (כולל `id=`) ללשונית שנייה. מעדכנים סטטוס בלשונית אחת, ואז בשנייה (בלי לרענן) | בלשונית השנייה נפתח חלון: מה המצב עכשיו, מי שינה ומתי, ו"להעביר בכל זאת" / "הצגת המצב העדכני". שום דבר לא נדרס | 2, 5 |
+| 6 | **Bulk:** מסמנים כמה פניות. בלשונית אחרת משנים אחת מהן. חוזרים ובוחרים סטטוס ב"עדכון כל הנבחרות" | "עודכנו N פניות; לא עודכנה 1", עם הסיבה ("עודכנה בינתיים על ידי משתמש אחר") וקישור לפנייה | 4 |
+| 7 | `docker compose stop api`, ואז משנים סינון; `docker compose start api` ולוחצים "ניסיון חוזר" | באנר אחד "אין חיבור לשרת", ואחרי החזרה הכול נטען מחדש | 5 |
+| 8 | http://localhost:5080/swagger | כל ה־Endpoints, כולל קודי השגיאה | 11 |
+
+כל המסלול הזה רץ גם אוטומטית בדפדפן אמיתי (Playwright, Chromium) – [`scripts/ui/screenshots.mjs`](scripts/ui/screenshots.mjs) – וצילומי המסך שלו נמצאים ב־[`docs/screenshots`](docs/screenshots).
+
+| רשימה | פרטי פנייה | 409 | Bulk |
+|---|---|---|---|
+| ![רשימה](docs/screenshots/01-list.png) | ![פרטים](docs/screenshots/04-details.png) | ![409](docs/screenshots/05-conflict-dialog.png) | ![Bulk](docs/screenshots/06-bulk-result.png) |
 
 ### לראות 409 משתי פקודות
 
@@ -90,8 +105,16 @@ cd backend
 dotnet test     # דורש ‎.NET 10 SDK ו־Docker פתוח: בדיקות ה־Integration מרימות SQL Server זמני משלהן
 ```
 
+```powershell
+cd frontend\requests-web
+npm ci
+npx ng test --watch=false   # 15 בדיקות לקוח (Vitest) – דורש Node.js
+```
+
 * **50 בדיקות Unit:** כללי מעברי סטטוס, שינוי סטטוס בישות, ולידציה (דפדוף, תאריכים, ערכים לא מוכרים, Bulk), פענוח `If-Match`, מחולל הנתונים.
 * **34 בדיקות Integration** מול SQL Server 2022 אמיתי (Testcontainers) דרך ה־API עצמו (`WebApplicationFactory`): סינון, חיפוש, מיון ודפדוף מול ספירה ישירה בבסיס הנתונים; 400 לכל פרמטר לא תקין; Summary ו־Invalidation של ה־Cache; ‏404/409/422/428; **5 עדכונים מקבילים עם אותו `ETag` – בדיוק אחד מצליח ונכתבת שורת היסטוריה אחת**; Bulk עם הצלחה חלקית; Migrations, אינדקסים ו־Seed חוזר.
+
+* **15 בדיקות לקוח (Vitest):** ה־Store – Debounce של החיפוש (בקשה אחת אחרי שההקלדה נעצרת), ביטול בקשה קודמת (`switchMap`), שמירת הנתונים הקודמים בזמן טעינה, סיכום שלא נטען מחדש בדפדוף, וסנכרון עם הכתובת; ההמרה בין הכתובת לשאילתה; הודעות השגיאה; ובמגירת הפרטים – `If-Match`, פתיחת חלון ה־409 ו"להעביר בכל זאת" מול הגרסה החדשה.
 
 בדיקות אמיתיות מול SQL Server ולא מול ספק ה־InMemory של EF: הוא לא אוכף `rowversion`, ובדיקת Concurrency מולו הייתה עוברת גם אם המנגנון שבור.
 
@@ -105,17 +128,19 @@ dotnet test     # דורש ‎.NET 10 SDK ו־Docker פתוח: בדיקות ה־
 | 3 היסטוריה (Audit) | [`RequestStatusHistory`](backend/src/RequestsManagement.Application/Requests/Entities/RequestStatusHistory.cs), [`ServiceRequest.ChangeStatus`](backend/src/RequestsManagement.Application/Requests/Entities/ServiceRequest.cs) | `UpdateStatusTests` (כל עדכון בודק את שורת ההיסטוריה), `SummaryAndDetailsTests` | [API](#api) |
 | 4 Bulk עד 100, הצלחה חלקית | [`RequestCommandService.BulkUpdateStatusAsync`](backend/src/RequestsManagement.Application/Requests/Services/RequestCommandService.cs), [`RequestRepository.SaveStatusChangesAsync`](backend/src/RequestsManagement.Infrastructure/Persistence/Repositories/RequestRepository.cs) | `BulkUpdateTests`, `ValidatorTests` | [Bulk](#עדכון-מרוכז-bulk--הצלחה-חלקית) |
 | 7 Cache | [`MemorySummaryCache`](backend/src/RequestsManagement.Infrastructure/Caching/MemorySummaryCache.cs), [`RequestQueryService.GetSummaryAsync`](backend/src/RequestsManagement.Application/Requests/Services/RequestQueryService.cs) | `SummaryAndDetailsTests` | [Cache](#cache) |
-| 8 בדיקות, כולל Integration ו־Concurrency | [`tests/`](backend/tests) | 50 Unit + 34 Integration | [בדיקות אוטומטיות](#בדיקות-אוטומטיות) |
+| 8 בדיקות, כולל Integration ו־Concurrency | [`tests/`](backend/tests), `*.spec.ts` | 50 Unit + 34 Integration + 15 לקוח | [בדיקות אוטומטיות](#בדיקות-אוטומטיות) |
 | 9 תכנון | – | – | [PLAN.md](PLAN.md) |
 | 10 איכות קוד, שגיאות, Logging | [`Program.cs`](backend/src/RequestsManagement.Api/Program.cs), [`GlobalExceptionHandler`](backend/src/RequestsManagement.Api/ErrorHandling/GlobalExceptionHandler.cs) | `Invalid_parameters_return_400_naming_the_field`, `Unknown_request_returns_404_problem_details` | [Logging](#logging) |
 | 6 ביצועים על 100K | [`ServiceRequestConfiguration`](backend/src/RequestsManagement.Infrastructure/Persistence/Configurations/ServiceRequestConfiguration.cs) (אינדקסים), [`measure.py`](scripts/perf/measure.py) | [`measure.sql`](docs/performance/measure.sql), [`runs/`](docs/performance/runs) | [PERFORMANCE.md](docs/PERFORMANCE.md) |
-| 5, 11 | בשלבים הבאים | | |
+| 5 Angular | [`requests-list.store.ts`](frontend/requests-web/src/app/features/requests/requests-list.store.ts) (URL, Debounce, `switchMap`), [`requests-page`](frontend/requests-web/src/app/features/requests/requests-page.component.ts), [`request-details`](frontend/requests-web/src/app/features/requests/request-details.component.ts) + [`conflict-dialog`](frontend/requests-web/src/app/features/requests/conflict-dialog.component.ts) (409), [`interceptors`](frontend/requests-web/src/app/core/http/interceptors.ts) | `requests-list.store.spec`, `request-details.component.spec`, `request-query.spec`, `error-messages.spec`; מסלול הדפדפן | [מבנה – הלקוח](#מבנה-הפתרון) |
+| 11 | בשלב הבא | | |
 
 ### פתרון תקלות
 
 | תקלה | פתרון |
 |---|---|
-| `port is already allocated` | פורט תפוס. משנים בקובץ `.env` ליד `docker-compose.yml`: `SQL_PORT=14334` או `API_PORT=5081`, ומריצים שוב `docker compose up -d` |
+| `port is already allocated` | פורט תפוס. משנים בקובץ `.env` ליד `docker-compose.yml`: `WEB_PORT=8081`, `API_PORT=5081` או `SQL_PORT=14334`, ומריצים שוב `docker compose up -d` |
+| הממשק מציג "אין חיבור לשרת" | ה־API לא רץ או עדיין עולה: `docker compose ps -a`, ואחרי שהוא `running` – "ניסיון חוזר" |
 | ה־API לא עולה, או `seeder` נכשל | `docker compose ps -a` ו־`docker compose logs seeder`. SQL Server צריך להיות `healthy`; בהרצה הראשונה זה לוקח עד דקה |
 | SQL Server נופל מיד | חסר זיכרון. ב־Docker Desktop: Settings ← Resources, לפחות 4GB |
 | Mac עם Apple Silicon | ה־Image של SQL Server הוא amd64. ב־Docker Desktop מפעילים "Use Rosetta for x86_64/amd64 emulation" |
@@ -129,12 +154,13 @@ dotnet test     # דורש ‎.NET 10 SDK ו־Docker פתוח: בדיקות ה־
 |---|---|
 | שרת | ‎.NET 10 (LTS), ASP.NET Core Web API (Controllers), EF Core 10 |
 | בסיס נתונים | SQL Server 2022 (Docker) |
-| לקוח | Angular, Angular Material, RxJS (בשלב הבא) |
+| לקוח | Angular 21 (Standalone, Signals, Zoneless), Angular Material 21, RxJS 7.8; nginx להגשה ול־Proxy ל־API |
 | בדיקות שרת | xUnit v3, Testcontainers (SQL Server אמיתי בקונטיינר), `WebApplicationFactory` |
+| בדיקות לקוח | Vitest (דרך `ng test`), ומסלול מקצה לקצה בדפדפן עם Playwright |
 | נתוני בדיקה | מחולל דטרמיניסטי (Seed קבוע) + `SqlBulkCopy` |
 | תיעוד API | Swagger (Swashbuckle) |
 | הרצה | Docker Compose |
-| CI | GitHub Actions: Build, בדיקה שה־Migrations תואמות למודל, בדיקות, והרצת Docker Compose מלאה עם 100,000 פניות |
+| CI | GitHub Actions: Build, בדיקה שה־Migrations תואמות למודל, בדיקות שרת ולקוח, Build של הלקוח, והרצת Docker Compose מלאה עם 100,000 פניות (API, ממשק, הדגמת 409) |
 
 ## מבנה הפתרון
 
@@ -150,11 +176,29 @@ backend/
   tests/
     RequestsManagement.UnitTests/        בדיקות לוגיקה ומחולל הנתונים
     RequestsManagement.IntegrationTests/ בדיקות מול SQL Server אמיתי (Testcontainers)
-docs/                                    התקנה, ביצועים
-scripts/                                 התקנה ובדיקת סביבה ב־Windows
+frontend/requests-web/src/app/
+  core/
+    api/                                 RequestsApiService (HTTP בלבד), מודלים, Lookups
+    http/                                Interceptors: X-User-Name, זיהוי "אין חיבור"; הודעות שגיאה בעברית
+    user/                                המשתמש הנוכחי
+  features/requests/
+    requests-list.store.ts               מצב הרשימה: URL, Debounce, switchMap, טעינה/שגיאה
+    requests-page.component.ts           Container – מחבר את ה־Store לרכיבים
+    request-filters / requests-table / summary-panel / bulk-actions-bar   רכיבי תצוגה (input/output)
+    request-details + conflict-dialog    מגירת פרטים, עדכון סטטוס, היסטוריה, 409
+  shared/                                באנר חיבור, תג סטטוס
+docs/                                    התקנה, ביצועים, צילומי מסך
+scripts/                                 התקנה ב־Windows, הדגמת 409, מדידות ביצועים, בדיקת ממשק
 ```
 
 **כיוון התלויות:** `Api → Application ← Infrastructure`. שכבת Application לא מכירה אף שכבה אחרת; היא מגדירה ממשקים, ו־Infrastructure מממשת אותם. כך הקומפיילר אוכף את ההפרדה.
+
+**הלקוח:**
+* `RequestsApiService` – HTTP בלבד, בלי מצב. ‏`RequestsListStore` – מצב הרשימה. **הכתובת היא מקור האמת:** כל פעולה (חיפוש, סינון, מיון, עמוד, פנייה פתוחה) מעדכנת את ה־URL, והרשימה נטענת לפיו, כך שרענון, קישור וכפתור Back מציגים את אותה תצוגה. כל טעינה עוברת `switchMap`, שמבטל בקשה קודמת שעוד לא חזרה; החיפוש עובר `debounceTime(350)`.
+* `RequestsPageComponent` מחבר בין ה־Store לרכיבים. ‏`RequestFilters`, `RequestsTable`, `SummaryPanel`, `BulkActionsBar` – רכיבי תצוגה (`input()` / `output()`) בלי גישה ל־HTTP. ‏`RequestDetails` טוען את הפנייה וההיסטוריה שלה לפי המזהה (`rxResource`).
+* מצבי מסך: טעינה (פס התקדמות, והטבלה הקודמת מעומעמת במקום להיעלם), אין תוצאות, שגיאה עם "נסו שוב", ובאנר אחד "אין חיבור לשרת" במקום שגיאה בכל חלק.
+* הודעות שנבנות ממה שהשרת החזיר: איזה שדה לא תקין, אילו מעברים מותרים, וקוד לפנייה לתמיכה בתקלת שרת.
+* ממשק בעברית מימין לשמאל, Angular Material.
 
 ## API
 

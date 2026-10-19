@@ -2,7 +2,6 @@
 
 המדריך מסביר איך להתקין את כל מה שצריך במחשב Windows, להוריד את הפרויקט, להריץ אותו ולבדוק אותו.
 
-> **הערה:** הממשק (Angular) יתווסף בשלב ד'. כל השאר כבר עובד ונבדק אוטומטית ב־CI בכל שינוי.
 
 ---
 
@@ -95,7 +94,7 @@ cd requests-management-system
    ```powershell
    docker compose ps -a
    ```
-   ‏`sqlserver` צריך להיות `healthy`, ‏`api` במצב `running`, ו־`seeder` במצב `exited (0)`. ‏`exited (0)` אומר שהוא סיים בהצלחה, וזה תקין: הוא רץ פעם אחת ונעצר.
+   ‏`sqlserver` צריך להיות `healthy`, ‏`api` ו־`web` במצב `running`, ו־`seeder` במצב `exited (0)`. ‏`exited (0)` אומר שהוא סיים בהצלחה, וזה תקין: הוא רץ פעם אחת ונעצר.
 3. **יצירה מחדש של נתוני הבדיקה** (מוחק הכול ויוצר מחדש, תמיד אותם נתונים):
    ```powershell
    docker compose run --rm seeder --reseed
@@ -104,7 +103,7 @@ cd requests-management-system
 ### כתובות
 | מה | כתובת |
 |---|---|
-| ממשק המשתמש (Angular) | http://localhost:8080 (יתווסף בשלב ד') |
+| ממשק המשתמש (Angular) | http://localhost:8080 |
 | תיעוד ה־API (Swagger) | http://localhost:5080/swagger |
 | בדיקת תקינות של ה־API | http://localhost:5080/health (מחזיר `Healthy`) |
 | SQL Server (ל־SSMS) | שרת: `localhost,14333` · משתמש: `sa` · סיסמה: `Requests_Dev_Passw0rd!` |
@@ -128,7 +127,12 @@ cd backend
 dotnet test
 ```
 
-בדיקות ה־Angular יתווספו בשלב ד'.
+בדיקות ה־Angular (דורש Node.js):
+```powershell
+cd frontend\requests-web
+npm ci
+npx ng test --watch=false
+```
 
 ---
 
@@ -141,6 +145,11 @@ docker compose up -d sqlserver seeder
 # ה-API (בחלון נוסף) – http://localhost:5080/swagger
 cd backend
 dotnet run --project src\RequestsManagement.Api
+
+# הממשק (בחלון נוסף) – http://localhost:4200, עם Proxy ל-API
+cd frontend\requests-web
+npm ci
+npm start
 ```
 
 ---

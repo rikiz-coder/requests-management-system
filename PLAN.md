@@ -286,13 +286,14 @@ X-User-Name: dana
 ### E5 – Angular
 | ID | משימה | מה נדרש | תוצר | תלוי ב־ | מאמץ | דרישה | סטטוס |
 |---|---|---|---|---|---|---|---|
-| T5.1 | הקמת פרויקט | Angular, Material, RTL ועברית, Proxy ל־API, Models, `RequestsApiService`, Interceptor, משתמש נוכחי, באנר "אין חיבור לשרת" | אפליקציה שמתחברת ל־API | T2.3 | 2.5h | 5 | ⬜ |
-| T5.2 | Store לרשימה | סנכרון עם ה־URL, Debounce, `switchMap`, ומצבי Loading/Empty/Error | `RequestsListStore` | T5.1 | 4h | 5 | ⬜ |
-| T5.3 | טבלה, סינון, מיון ודפדוף | רכיבי תצוגה, כשהכול מתבצע בצד השרת | מסך ראשי | T5.2 | 3.5h | 5 | ⬜ |
-| T5.4 | פאנל Aggregations | הצגה ורענון אחרי עדכון | `SummaryPanel` | T5.1, T2.5 | 1h | 5 | ⬜ |
-| T5.5 | מגירת פרטים | פרטים, עדכון סטטוס לפי `allowedNextStatuses`, היסטוריית שינויים, מזהה הפנייה ב־URL | `RequestDetailsDrawer` | T5.3, T3.2, T3.3 | 3h | 3, 5 | ⬜ |
-| T5.6 | טיפול ב־409 | `ConflictDialog`: מצב עכשיו, מי שינה ומתי, "הצגת המצב העדכני" / "להעביר בכל זאת" | חלון Conflict | T5.5 | 2h | 2, 5 | ⬜ |
-| T5.7 | Bulk ב־UI | בחירה מרובה, ביצוע, הצגת תוצאה לכל פנייה עם קישור לפנייה שלא עודכנה | Bulk מה־UI | T5.3, T3.4 | 2h | 4, 5 | ⬜ |
+| T5.1 | הקמת פרויקט | Angular, Material, RTL ועברית, Proxy ל־API, Models, `RequestsApiService`, Interceptor, משתמש נוכחי, באנר "אין חיבור לשרת" | אפליקציה שמתחברת ל־API | T2.3 | 2.5h | 5 | ✅ |
+| T5.2 | Store לרשימה | סנכרון עם ה־URL, Debounce, `switchMap`, ומצבי Loading/Empty/Error | `RequestsListStore` | T5.1 | 4h | 5 | ✅ |
+| T5.3 | טבלה, סינון, מיון ודפדוף | רכיבי תצוגה, כשהכול מתבצע בצד השרת | מסך ראשי | T5.2 | 3.5h | 5 | ✅ |
+| T5.4 | פאנל Aggregations | הצגה ורענון אחרי עדכון | `SummaryPanel` | T5.1, T2.5 | 1h | 5 | ✅ |
+| T5.5 | מגירת פרטים | פרטים, עדכון סטטוס לפי `allowedNextStatuses`, היסטוריית שינויים, מזהה הפנייה ב־URL | `RequestDetailsDrawer` | T5.3, T3.2, T3.3 | 3h | 3, 5 | ✅ |
+| T5.6 | טיפול ב־409 | `ConflictDialog`: מצב עכשיו, מי שינה ומתי, "הצגת המצב העדכני" / "להעביר בכל זאת" | חלון Conflict | T5.5 | 2h | 2, 5 | ✅ |
+| T5.7 | Bulk ב־UI | בחירה מרובה, ביצוע, הצגת תוצאה לכל פנייה עם קישור לפנייה שלא עודכנה | Bulk מה־UI | T5.3, T3.4 | 2h | 4, 5 | ✅ |
+| T5.8 | בדיקת ממשק בדפדפן אמיתי | מסלול הבודק ב־Playwright (חיפוש, רענון, 409, Bulk, אין חיבור, אין תוצאות) עם צילומי מסך; תיקון מה שנמצא | `scripts/ui/screenshots.mjs`, `docs/screenshots` | T5.7 | 2h (לא תוכנן) | 5 | ✅ |
 
 ### E6 – בדיקות אוטומטיות
 | ID | משימה | מה נדרש | תוצר | תלוי ב־ | מאמץ | דרישה | סטטוס |
@@ -300,7 +301,7 @@ X-User-Name: dana
 | T6.1 | Unit Tests | מעברי סטטוס, ולידציה של Query ושל Bulk | xUnit | T3.1, T2.2 | 1.5h | 8 | ✅ |
 | T6.2 | תשתית Integration | `WebApplicationFactory` עם **Testcontainers** (SQL Server אמיתי) | Fixture משותף | T1.2, T2.1 | 2h | 8 | ✅ |
 | T6.3 | Integration Tests | (1) סינון ודפדוף תקינים (2) 404 (3) **Concurrency: שני עדכונים עם אותו `If-Match`, אחד מקבל 200 והשני 409 עם `lastChange`, ונשמרת שורת היסטוריה אחת** (4) `If-Match` חסר מחזיר 428 (5) Bulk חלקי (6) Invalidation של Cache | בדיקות ירוקות ב־CI | T6.2, T3.4, T4.1 | 3.5h | 8 | ✅ |
-| T6.4 | בדיקות Angular | Store: `debounce`, `switchMap` וסנכרון URL. טיפול ב־409 בממשק | בדיקות לקוח | T5.2 | 1h | 8 | ⬜ |
+| T6.4 | בדיקות Angular | Store: `debounce`, `switchMap` וסנכרון URL. טיפול ב־409 בממשק | בדיקות לקוח | T5.2 | 1h | 8 | ✅ |
 
 ### E7 – ביצועים
 | ID | משימה | מה נדרש | תוצר | תלוי ב־ | מאמץ | דרישה | סטטוס |
