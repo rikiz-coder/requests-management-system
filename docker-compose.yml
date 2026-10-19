@@ -46,6 +46,8 @@ services:
     environment:
       <<: *connection-string
       ASPNETCORE_ENVIRONMENT: Development
+      # Set EF_SQL_LOG_LEVEL=Information to log every SQL command EF Core sends (used by the performance run).
+      Logging__LogLevel__Microsoft.EntityFrameworkCore.Database.Command: ${EF_SQL_LOG_LEVEL:-Warning}
     ports:
       - "${API_PORT:-5080}:8080"
     depends_on:

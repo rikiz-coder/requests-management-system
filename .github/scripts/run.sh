@@ -6,7 +6,7 @@ log=$(mktemp)
 "$@" 2>&1 | tee "$log"
 status=${PIPESTATUS[0]}
 if [ "$status" -ne 0 ]; then
-  grep -E "error|Error|FAIL|Failed|Assert|Exception" "$log" | grep -v "^::" | sort -u | head -40 | while IFS= read -r line; do
+  grep -E "error|Error|FAIL|Failed|Assert|Exception|Msg [0-9]+|Traceback|line [0-9]+" "$log" | grep -v "^::" | sort -u | head -40 | while IFS= read -r line; do
     echo "::error::${line:0:900}"
   done
 fi

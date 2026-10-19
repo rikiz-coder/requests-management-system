@@ -1,0 +1,32 @@
+# Performance measurements on 100,000 requests. Push a branch named tools/perf-<anything>:
+# the workflow runs scripts/perf/run-in-ci.sh and commits the results (docs/performance) back to the branch.
+name: Performance measurements
+
+on:
+  push:
+    branches: ['tools/perf-*']
+
+permissions:
+  contents: write
+
+jobs:
+  measure:
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.head_commit.message, '[performance results]') }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Measure
+        run: .github/scripts/run.sh ./scripts/perf/run-in-ci.sh
+
+      - name: Commit results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/performance
+          git commit -m "Performance measurements [performance results]"
+          git push
+
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs --no-color | tail -200
