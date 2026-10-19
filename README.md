@@ -4,8 +4,6 @@
 
 מערכת לניהול פניות שמגיעות מארגונים ומעסיקים. כמה משתמשים עובדים בה במקביל על 100,000 פניות: איתור, סינון, מיון ודפדוף בצד השרת, עדכון סטטוס עם הגנה מפני עדכונים מתחרים, עדכון מרוכז (Bulk), היסטוריית שינויים ונתונים מסכמים.
 
-> 🚧 **בפיתוח.** הפרויקט נבנה בשלבים לפי [תוכנית העבודה](PLAN.md). סעיפים שמסומנים "בשלב הבא" יושלמו עם הקוד.
-
 | מסמך | מה יש בו |
 |---|---|
 | README (כאן) | מדריך לבודק, הרצה, טכנולוגיות, מבנה, בסיס נתונים, Concurrency, Bulk, Cache, החלטות, מגבלות, שימוש ב־AI |
@@ -53,7 +51,7 @@ docker compose run --rm seeder --reseed --count 250000  # כמות אחרת
 | 1 | פותחים את http://localhost:8080 | 100,000 פניות, 20 בעמוד, החדשות קודם; למעלה – סיכום לפי סטטוס ועדיפות | 1, 5 |
 | 2 | מקלידים "היתר" בחיפוש, עם DevTools ← Network פתוח | בקשה אחת אחרי שמפסיקים להקליד (350ms). בקשה קודמת שעוד רצה מסומנת `(canceled)`. הרשימה והסיכום מתעדכנים יחד | 1, 5 |
 | 3 | לוחצים על "ממתינה" בסיכום, ממיינים לפי עמודה, עוברים לעמוד 2 ולוחצים F5 | הסינון, המיון והעמוד נשמרים בכתובת, והרענון מציג אותה תצוגה | 1, 5 |
-| 4 | לוחצים על פנייה | נפתחת מגירה: פרטים, כפתורים רק למעברים המותרים, והיסטוריה | 2, 3 |
+| 4 | לוחצים על פנייה (או מקלידים את המספר שלה בחיפוש, למשל `99236`) | נפתחת מגירה: פרטים, כפתורים רק למעברים המותרים, והיסטוריה | 2, 3 |
 | 5 | **409:** מעתיקים את הכתובת (כולל `id=`) ללשונית שנייה. מעדכנים סטטוס בלשונית אחת, ואז בשנייה (בלי לרענן) | בלשונית השנייה נפתח חלון: מה המצב עכשיו, מי שינה ומתי, ו"להעביר בכל זאת" / "הצגת המצב העדכני". שום דבר לא נדרס | 2, 5 |
 | 6 | **Bulk:** מסמנים כמה פניות. בלשונית אחרת משנים אחת מהן. חוזרים ובוחרים סטטוס ב"עדכון כל הנבחרות" | "עודכנו N פניות; לא עודכנה 1", עם הסיבה ("עודכנה בינתיים על ידי משתמש אחר") וקישור לפנייה | 4 |
 | 7 | `docker compose stop api`, ואז משנים סינון; `docker compose start api` ולוחצים "ניסיון חוזר" | באנר אחד "אין חיבור לשרת", ואחרי החזרה הכול נטען מחדש | 5 |
@@ -127,13 +125,13 @@ npx ng test --watch=false   # 15 בדיקות לקוח (Vitest) – דורש Nod
 | 2 עדכון סטטוס, מעברים, Optimistic Concurrency | [`RequestCommandService`](backend/src/RequestsManagement.Application/Requests/Services/RequestCommandService.cs), [`StatusTransitions`](backend/src/RequestsManagement.Application/Requests/Entities/StatusTransitions.cs), [`EntityTags`](backend/src/RequestsManagement.Api/Http/EntityTags.cs), [`GlobalExceptionHandler`](backend/src/RequestsManagement.Api/ErrorHandling/GlobalExceptionHandler.cs) | `UpdateStatusTests`, `StatusTransitionsTests`, `ServiceRequestTests`, `EntityTagsTests` | [Concurrency](#עדכון-סטטוס-ו־concurrency) |
 | 3 היסטוריה (Audit) | [`RequestStatusHistory`](backend/src/RequestsManagement.Application/Requests/Entities/RequestStatusHistory.cs), [`ServiceRequest.ChangeStatus`](backend/src/RequestsManagement.Application/Requests/Entities/ServiceRequest.cs) | `UpdateStatusTests` (כל עדכון בודק את שורת ההיסטוריה), `SummaryAndDetailsTests` | [API](#api) |
 | 4 Bulk עד 100, הצלחה חלקית | [`RequestCommandService.BulkUpdateStatusAsync`](backend/src/RequestsManagement.Application/Requests/Services/RequestCommandService.cs), [`RequestRepository.SaveStatusChangesAsync`](backend/src/RequestsManagement.Infrastructure/Persistence/Repositories/RequestRepository.cs) | `BulkUpdateTests`, `ValidatorTests` | [Bulk](#עדכון-מרוכז-bulk--הצלחה-חלקית) |
+| 5 Angular | [`requests-list.store.ts`](frontend/requests-web/src/app/features/requests/requests-list.store.ts) (URL, Debounce, `switchMap`), [`requests-page`](frontend/requests-web/src/app/features/requests/requests-page.component.ts), [`request-details`](frontend/requests-web/src/app/features/requests/request-details.component.ts) + [`conflict-dialog`](frontend/requests-web/src/app/features/requests/conflict-dialog.component.ts) (409), [`interceptors`](frontend/requests-web/src/app/core/http/interceptors.ts) | `requests-list.store.spec`, `request-details.component.spec`, `request-query.spec`, `error-messages.spec`; מסלול הדפדפן | [מבנה – הלקוח](#מבנה-הפתרון) |
+| 6 ביצועים על 100K | [`ServiceRequestConfiguration`](backend/src/RequestsManagement.Infrastructure/Persistence/Configurations/ServiceRequestConfiguration.cs) (אינדקסים), [`measure.py`](scripts/perf/measure.py) | [`measure.sql`](docs/performance/measure.sql), [`runs/`](docs/performance/runs) | [PERFORMANCE.md](docs/PERFORMANCE.md) |
 | 7 Cache | [`MemorySummaryCache`](backend/src/RequestsManagement.Infrastructure/Caching/MemorySummaryCache.cs), [`RequestQueryService.GetSummaryAsync`](backend/src/RequestsManagement.Application/Requests/Services/RequestQueryService.cs) | `SummaryAndDetailsTests` | [Cache](#cache) |
 | 8 בדיקות, כולל Integration ו־Concurrency | [`tests/`](backend/tests), `*.spec.ts` | 50 Unit + 35 Integration + 15 לקוח | [בדיקות אוטומטיות](#בדיקות-אוטומטיות) |
 | 9 תכנון | – | – | [PLAN.md](PLAN.md) |
 | 10 איכות קוד, שגיאות, Logging | [`Program.cs`](backend/src/RequestsManagement.Api/Program.cs), [`GlobalExceptionHandler`](backend/src/RequestsManagement.Api/ErrorHandling/GlobalExceptionHandler.cs) | `Invalid_parameters_return_400_naming_the_field`, `Unknown_request_returns_404_problem_details` | [Logging](#logging) |
-| 6 ביצועים על 100K | [`ServiceRequestConfiguration`](backend/src/RequestsManagement.Infrastructure/Persistence/Configurations/ServiceRequestConfiguration.cs) (אינדקסים), [`measure.py`](scripts/perf/measure.py) | [`measure.sql`](docs/performance/measure.sql), [`runs/`](docs/performance/runs) | [PERFORMANCE.md](docs/PERFORMANCE.md) |
-| 5 Angular | [`requests-list.store.ts`](frontend/requests-web/src/app/features/requests/requests-list.store.ts) (URL, Debounce, `switchMap`), [`requests-page`](frontend/requests-web/src/app/features/requests/requests-page.component.ts), [`request-details`](frontend/requests-web/src/app/features/requests/request-details.component.ts) + [`conflict-dialog`](frontend/requests-web/src/app/features/requests/conflict-dialog.component.ts) (409), [`interceptors`](frontend/requests-web/src/app/core/http/interceptors.ts) | `requests-list.store.spec`, `request-details.component.spec`, `request-query.spec`, `error-messages.spec`; מסלול הדפדפן | [מבנה – הלקוח](#מבנה-הפתרון) |
-| 11 | בשלב הבא | | |
+| 11 תיעוד: הרצה, טכנולוגיות, מבנה, DB ואינדקסים, Concurrency ו־Bulk, Cache, החלטות, מגבלות, AI | – | – | README זה ([טכנולוגיות](#טכנולוגיות-וגרסאות), [מבנה](#מבנה-הפתרון), [החלטות](#החלטות-טכנולוגיות-משמעותיות), [מגבלות](#מגבלות-ידועות), [AI](#שימוש-בכלי-ai)), [INSTALL.he.md](docs/INSTALL.he.md), Swagger |
 
 ### פתרון תקלות
 
@@ -142,6 +140,7 @@ npx ng test --watch=false   # 15 בדיקות לקוח (Vitest) – דורש Nod
 | `port is already allocated` | פורט תפוס. משנים בקובץ `.env` ליד `docker-compose.yml`: `WEB_PORT=8081`, `API_PORT=5081` או `SQL_PORT=14334`, ומריצים שוב `docker compose up -d` |
 | הממשק מציג "אין חיבור לשרת" | ה־API לא רץ או עדיין עולה: `docker compose ps -a`, ואחרי שהוא `running` – "ניסיון חוזר" |
 | ה־API לא עולה, או `seeder` נכשל | `docker compose ps -a` ו־`docker compose logs seeder`. SQL Server צריך להיות `healthy`; בהרצה הראשונה זה לוקח עד דקה |
+| בניית `web` נכשלת עם "unable to get local issuer certificate" | סינון אינטרנט או אנטי־וירוס שבודק תעבורה מוצפנת. הבנייה לא מורידה דבר מלבד חבילות npm; אם `npm ci` נכשל, צריך לאשר את `registry.npmjs.org` אצל ספק הסינון |
 | SQL Server נופל מיד | חסר זיכרון. ב־Docker Desktop: Settings ← Resources, לפחות 4GB |
 | Mac עם Apple Silicon | ה־Image של SQL Server הוא amd64. ב־Docker Desktop מפעילים "Use Rosetta for x86_64/amd64 emulation" |
 | תקלות התקנה ב־Windows | [docs/INSTALL.he.md – פתרון תקלות](docs/INSTALL.he.md#8-פתרון-תקלות) |
@@ -150,16 +149,16 @@ npx ng test --watch=false   # 15 בדיקות לקוח (Vitest) – דורש Nod
 
 ## טכנולוגיות וגרסאות
 
-| שכבה | טכנולוגיה |
+| שכבה | טכנולוגיה וגרסה |
 |---|---|
-| שרת | ‎.NET 10 (LTS), ASP.NET Core Web API (Controllers), EF Core 10 |
-| בסיס נתונים | SQL Server 2022 (Docker) |
-| לקוח | Angular 21 (Standalone, Signals, Zoneless), Angular Material 21, RxJS 7.8; nginx להגשה ול־Proxy ל־API |
-| בדיקות שרת | xUnit v3, Testcontainers (SQL Server אמיתי בקונטיינר), `WebApplicationFactory` |
-| בדיקות לקוח | Vitest (דרך `ng test`), ומסלול מקצה לקצה בדפדפן עם Playwright |
+| שרת | ‎.NET 10 (LTS, SDK ‎10.0.100+), ASP.NET Core Web API (Controllers), EF Core 10.0.13, FluentValidation 12.1 |
+| בסיס נתונים | SQL Server 2022 (Docker, `mcr.microsoft.com/mssql/server:2022-latest`) |
+| לקוח | Angular 21.2 (Standalone, Signals, Zoneless), Angular Material 21.2, RxJS 7.8, TypeScript 5.9; nginx 1.27 להגשה ול־Proxy ל־API |
+| בדיקות שרת | xUnit v3 (3.2), Testcontainers 4.15 (SQL Server אמיתי בקונטיינר), `WebApplicationFactory` |
+| בדיקות לקוח | Vitest 4 (דרך `ng test`, ‏jsdom), ומסלול מקצה לקצה בדפדפן עם Playwright |
 | נתוני בדיקה | מחולל דטרמיניסטי (Seed קבוע) + `SqlBulkCopy` |
-| תיעוד API | Swagger (Swashbuckle) |
-| הרצה | Docker Compose |
+| תיעוד API | Swagger (Swashbuckle 10.2) |
+| הרצה | Docker Compose: ‏`sqlserver`, ‏`seeder` (Migrations + נתונים, רץ ויוצא), ‏`api`, ‏`web` |
 | CI | GitHub Actions: Build, בדיקה שה־Migrations תואמות למודל, בדיקות שרת ולקוח, Build של הלקוח, והרצת Docker Compose מלאה עם 100,000 פניות (API, ממשק, הדגמת 409) |
 
 ## מבנה הפתרון
@@ -353,11 +352,48 @@ Requests                                  RequestStatusHistory
 
 ## החלטות טכנולוגיות משמעותיות
 
-בשלב הבא.
+### 1. SQL Server עם EF Core, ו־Concurrency שנאכף בבסיס הנתונים
+
+הדרישות המרכזיות הן שאילתות מסוננות וממוינות על 100,000 שורות, ספירות מקובצות, ועדכון מותנה בגרסה שבו רק אחד משני עדכונים מתחרים מצליח. כל אלה הם יכולות מובנות של בסיס נתונים רלציוני.
+
+| חלופה | יתרון | למה לא |
+|---|---|---|
+| **SQL Server + EF Core, ‏`rowversion` (נבחר)** | `rowversion` מתעדכן על ידי השרת בכל שינוי, ו־EF Core מוסיף אותו ל־`WHERE` של ה־`UPDATE`: הבדיקה והכתיבה הן פעולה אחת, אין חלון זמן ביניהן. `IQueryable` מתורגם ל־SQL אחד עם `WHERE`/`ORDER BY`/`OFFSET`. Execution Plans אמיתיים למדידה | – |
+| MongoDB | גמיש בסכמה | הנתונים טבלאיים ובעלי מבנה קבוע; גרסה צריך לנהל ידנית (`findOneAndUpdate` עם תנאי על שדה גרסה); Aggregations ו־Explain פחות מוכרים בסביבה ארגונית של ‎.NET |
+| PostgreSQL | חינמי, `xmin` כגרסה | שקול טכנית. SQL Server נבחר כי הוא הנפוץ בסביבת ‎.NET ארגונית ו־SSMS מאפשר לבודק לפתוח את ה־Execution Plans שצורפו |
+| Dapper / SQL ידני | שליטה מלאה ב־SQL | סינון משולב דינמי היה הופך לבניית מחרוזות SQL; EF Core נותן אותה שאילתה (נבדק ב־[ef-sql.log](docs/performance/runs/2-tuned/results/ef-sql.log)) עם Concurrency ו־Migrations מובנים |
+| עמודת `Version int` שהקוד מקדם | ניידת בין בסיסי נתונים | קל לשכוח לקדם אותה במסלול כלשהו; `rowversion` לא ניתן לשכוח |
+| נעילה פסימית (`UPDLOCK`) | אין התנגשויות | מחזיקה נעילה בזמן שהמשתמש חושב; לא מתאים לממשק Web |
+
+### 2. Offset Pagination ולא Keyset
+
+| חלופה | יתרון | למה לא |
+|---|---|---|
+| **`OFFSET/FETCH` עם `page` ו־`pageSize` (נבחר)** | קפיצה לכל עמוד, מספר עמודים כולל, כתובת פשוטה שאפשר לשתף (`?page=7`). עם אינדקס שתואם את ה־`ORDER BY` העמודים הראשונים זולים (110–221 reads) | עמוד עמוק במיון בלי אינדקס יקר – מתועד כמגבלה |
+| Keyset ("המשך אחרי השורה האחרונה") | נמדד: 333 reads במקום 1,916 בעמוד 500 | אין קפיצה לעמוד N ואין "עמוד X מתוך Y"; דורש אינדקס לכל סדר מיון; עבודה ב־API וגם בלקוח, בשביל תרחיש (עמוד 500) שמשתמש לא מגיע אליו בפועל – הוא מסנן |
+
+### 3. מצב הרשימה בלקוח: Store קטן עם Signals ו־RxJS, והכתובת כמקור האמת
+
+| חלופה | יתרון | למה לא |
+|---|---|---|
+| **Store אחד לרשימה (Signals + RxJS), מצב ב־URL (נבחר)** | רענון, קישור וכפתור Back מציגים אותה תצוגה בלי קוד נוסף. `debounceTime` ו־`switchMap` במקום אחד, נבדקים בבדיקות יחידה. רכיבי התצוגה לא מכירים HTTP | – |
+| NgRx | סטנדרט לאפליקציות גדולות, DevTools | מסך אחד עם מצב אחד; Actions, Reducers ו־Effects היו מוסיפים קוד בלי להוסיף יכולת (Over-engineering) |
+| מצב בתוך הרכיב | הכי מעט קוד | ערבוב HTTP ותצוגה; רענון מאבד את הסינון; קשה לבדוק |
+
+**ועוד החלטות שמנומקות במקומן:** [הצלחה חלקית ב־Bulk ולמה 200 ולא 207](#עדכון-מרוכז-bulk--הצלחה-חלקית) · [409 ולא 412](#עדכון-סטטוס-ו־concurrency) · [מה נשמר ב־Cache ולמה לא הרשימה](#cache) · [בדיקות מול SQL Server אמיתי ולא InMemory](#בדיקות-אוטומטיות) · [חיפוש `LIKE` ולא Full-Text](docs/PERFORMANCE.md#צוואר-הבקבוק-חיפוש-מכיל).
 
 ## מגבלות ידועות
 
-בשלב הבא.
+| מגבלה | ההשפעה | איך משפרים | הערכה |
+|---|---|---|---|
+| **חיפוש "מכיל" סורק את כל הטבלה** | 315ms על 100,000 פניות (2,502 reads), וגדל ליניארית עם הטבלה. שאר הקריאות 2–13ms | **השיפור הראשון שהייתי עושה:** עמודה מחושבת עם Collation בינארי ו־`UPPER` – נמדד: פי 14 פחות CPU (306→22ms). בייצור: Full-Text Index (לא קיים ב־Image של SQL Server ל־Linux שבשימוש) ([פירוט](docs/PERFORMANCE.md#צוואר-הבקבוק-חיפוש-מכיל)) | 3 שעות / יום עם FTS |
+| **אין הזדהות** | `X-User-Name` נשלח מהלקוח ונשמר ב־Audit כפי שהוא, כך שאפשר לזייף מי ביצע שינוי | שם המשתמש נלקח מטוקן (JWT / OpenID Connect) בשרת, והכותרת נמחקת. השינוי מרוכז ב־[`UserHeader`](backend/src/RequestsManagement.Api/Http/UserHeader.cs) וב־Interceptor אחד בלקוח | יום |
+| **סינון תאריכים לפי יום UTC** | הממשק מציג שעות בשעון המקומי, אבל `createdFrom`/`createdTo` הם ימים ב־UTC. פנייה שנוצרה ב־01:00 בלילה בישראל שייכת בסינון ל"אתמול": פניות מהשעתיים–שלוש הראשונות של היום המקומי נופלות מחוץ לטווח שנבחר | הלקוח שולח את תחילת היום המקומי כרגע מדויק (`2026-10-16T00:00:00+03:00`), והשרת ממיר ל־UTC | 2 שעות |
+| **Cache בזיכרון של מופע אחד** | בכמה מופעים, מופע שלא ביצע את העדכון מציג סיכום ישן עד 60 שניות | Redis דרך `IDistributedCache` ([פירוט](#cache)) | 3 שעות |
+| **דפדוף עמוק במיון בלי אינדקס** | עמוד 500 במיון לפי כותרת: 211ms (1,916 reads) | Keyset Pagination – נמדד 333 reads ([החלטה 2](#2-offset-pagination-ולא-keyset)) | 4 שעות |
+| **`COUNT(*)` בכל בקשה** | כ־150 מתוך 221 ה־reads של הרשימה ללא סינון הם הספירה | ספירה משוערת כשאין סינון, או "יש עוד" במקום מספר מדויק | 2 שעות |
+
+**מחוץ להיקף (לא נדרש):** יצירה ועריכה של פניות (חוץ מסטטוס), שיוך מטפל, והרשאות. נתוני הבדיקה בדיוניים.
 
 ## Logging
 
@@ -369,4 +405,22 @@ Requests                                  RequestStatusHistory
 
 ## שימוש בכלי AI
 
-בשלב הבא.
+הפרויקט פותח עם **Claude (Anthropic)** דרך Claude Code, כשותף לכתיבה: הכלי כתב את רוב הקוד, הבדיקות, הסקריפטים והתיעוד. ההחלטות, הבדיקה של כל שלב והאחריות לקוד – שלי. העבודה התנהלה לפי [תוכנית העבודה](PLAN.md): לפני כל שלב הוגדרו היקף וקריטריוני הצלחה, ובסופו הרצתי את המערכת במחשב שלי ואישרתי לפני שהמשכנו.
+
+| תחום | מה עשה הכלי | מה הוחלט או נבדק ידנית |
+|---|---|---|
+| תכנון | ניתח את קובץ הדרישות, הציע תוכנית עבודה ושאל שאלות פתוחות | בחירת SQL Server, הגשה ב־GitHub עם Docker Compose, והצלחה חלקית ב־Bulk. בחרתי אילו רעיונות לאמץ מ־README של פרויקט דומה (ETag/If-Match, 409 מפורט, מצב ב־URL, תיעוד ביצועים) ואילו לא (Token נגד מרוץ ב־Cache, Seed אוטומטי ב־API, Aggregation נוספת). הוחלט לא להוסיף "נוצר על ידי" (לא נדרש, וההיסטוריה שומרת מי שינה) |
+| Backend ובסיס נתונים | כתב את השכבות, ה־Migrations, ה־Seeder והאינדקסים | 100,000 הרשומות נבדקו ב־SSMS. הדגמת ה־409 הורצה ב־PowerShell אצלי |
+| ביצועים | כתב את סקריפט המדידה, הריץ אותו ב־CI וניתח את ה־Execution Plans | הוחלט להשאיר את שיפור החיפוש כהצעה מתועדת ומדודה, בלי לממש |
+| Angular | כתב את ה־Store, הרכיבים, הבדיקות ומסלול הבדיקה בדפדפן (Playwright) | עברתי על הממשק: חיפוש, סינון, רענון, 409 משתי לשוניות, Bulk. ביקשתי תוספת: חיפוש לפי מספר פנייה |
+| תיעוד | כתב את ה־README, מדריך ההתקנה ודוח הביצועים | ה־README נבנה במבנה "מדריך לבודק" לפי דוגמה שבחרתי; עברתי על הנימוקים |
+
+**איך נבדק מה שהכלי כתב:** כל שינוי עבר ב־GitHub Actions: Build, בדיקה שה־Migrations תואמות למודל, 50 בדיקות Unit, ‏35 Integration מול SQL Server אמיתי, ‏15 בדיקות לקוח, ואז הרצת Docker Compose מלאה עם 100,000 פניות, קריאות ל־API, הממשק דרך nginx והדגמת ה־409. המספרים בדוח הביצועים נמדדו בפועל, וקובצי ה־`.sqlplan` מצורפים.
+
+**טעויות של הכלי שנתפסו בבדיקה ותוקנו:**
+* **אינדקסים שלא תאמו את המיון** – המדידה הראשונה הראתה סריקה ומיון של כל הטבלה, כי האינדקסים לא כללו את `Id DESC` שבסוף ה־`ORDER BY`. תוקן ב־Migration ‏`TuneIndexes` (2,067→221 reads).
+* **שם בעברית בכותרת HTTP** – בדיקות ה־Integration נכשלו: כותרות HTTP הן ASCII בלבד. תוקן בקידוד בלקוח ופענוח בשרת.
+* **גוף ה־409 ריק ב־Windows PowerShell 5.1** – נתפס כשהרצתי את סקריפט ההדגמה אצלי.
+* **הממשק נתקע כדקה כשה־API כבוי**, גלילה צדדית מהמגירה, תווית חתוכה ורווח חסר – נתפסו בבדיקה בדפדפן.
+* **בניית הממשק נכשלה במחשב שלי** – הבנייה הורידה גופנים מהאינטרנט, ונכשלה ברשת שבודקת תעבורה מוצפנת. הבנייה כבר לא תלויה בהורדה הזו.
+* **סקריפט ההתקנה ל־Windows** – נכשל על מקור ה־Microsoft Store והציג אזהרות שגויות; תוקן לפי הפלט שהתקבל אצלי.

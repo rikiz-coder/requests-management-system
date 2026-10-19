@@ -3,9 +3,10 @@
 * List: 20 rows; paginator: 1–20 מתוך 100,000
 * Typing "היתר" (4 keys, 80ms apart) sent 1 list request(s): search=היתר&sortBy=createdAt&sortDirection=desc&page=1&pageSize=20
 * URL after search: http://localhost:8080/?search=היתר
+* Search "99236": 1 row(s), first:  99236 ערעור על החלטה רימון לוגיסטיקה הושלמה בינונית אהרן ביטון 30/01/2026 11:28 19/02/2026 21:22; paginator: 1–1 מתוך 1
 * Reload keeps the view: true (http://localhost:8080/?status=Waiting&page=2); range: 21–40 מתוך 15,162
 * Details URL: http://localhost:8080/?status=InProgress&id=22366
-* 409 dialog: הפנייה עודכנה בינתיים על ידי משתמש אחר השינוי שלך להושלמה לא נשמר, כדי לא לדרוס את העדכון של המשתמש האחר. הסטטוס עכשיו: ממתינה אברהם כהן שינה מבטיפול לממתינה ב־19/10/2026 10:20:42. הצגת המצב העדכני להעביר בכל זאת להושלמה
+* 409 dialog: הפנייה עודכנה בינתיים על ידי משתמש אחר השינוי שלך להושלמה לא נשמר, כדי לא לדרוס את העדכון של המשתמש האחר. הסטטוס עכשיו: ממתינה אברהם כהן שינה מבטיפול לממתינה ב־19/10/2026 12:00:28. הצגת המצב העדכני להעביר בכל זאת להושלמה
 * Layout check: {"scrolled":[],"wide":["mat-drawer.mat-drawer.drawer.mat-drawer-end [-460..0]"],"docScroll":0}
 * Bulk result: תוצאת העדכון המרוכז עודכנו 2 פניות להושלמה. לא עודכנו 1: פנייה 22110 – עודכנה בינתיים על ידי משתמש אחר סגירה
 * CONSOLE ERROR: Failed to load resource: the server responded with a status of 502 (Bad Gateway)
