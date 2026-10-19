@@ -63,6 +63,18 @@ public class SearchTests(ApiFixture api)
     }
 
     [Fact]
+    public async Task Search_by_number_finds_the_request_with_that_id()
+    {
+        var id = await api.QueryDbAsync(db => db.Requests.OrderBy(r => r.Id).Skip(1234).Select(r => r.Id).FirstAsync(Ct));
+
+        var page = await GetAsync($"/api/requests?search={id}&pageSize=100");
+
+        Assert.Contains(page.Items, r => r.Id == id);
+        Assert.All(page.Items, r => Assert.True(
+            r.Id == id || r.Title.Contains(id.ToString()) || r.OrganizationName.Contains(id.ToString())));
+    }
+
+    [Fact]
     public async Task Handler_and_organization_filters_use_exact_and_prefix_match()
     {
         var sample = await api.QueryDbAsync(db => db.Requests.AsNoTracking()

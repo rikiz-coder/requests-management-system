@@ -19,7 +19,7 @@ import { PRIORITY_LABELS, STATUS_LABELS } from '../../core/i18n/labels';
   template: `
     <div class="filters">
       <mat-form-field class="search" appearance="outline" subscriptSizing="dynamic">
-        <mat-label>חיפוש בכותרת או בשם הארגון</mat-label>
+        <mat-label>חיפוש לפי מספר, כותרת או שם ארגון</mat-label>
         <mat-icon matPrefix>search</mat-icon>
         <input matInput type="search" maxlength="100" [value]="query().search ?? ''"
                (input)="searchChange.emit($any($event.target).value)" />

@@ -26,7 +26,10 @@ public class RequestFilter
     /// <summary>Created on or before this date (UTC, inclusive).</summary>
     public DateOnly? CreatedTo { get; set; }
 
-    /// <summary>Free text: contained in the title or in the organization name.</summary>
+    /// <summary>
+    /// Free text: contained in the title or in the organization name.
+    /// A number alone also finds the request with that Id.
+    /// </summary>
     public string? Search { get; set; }
 
     public bool HasNoFilters() =>

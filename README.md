@@ -112,7 +112,7 @@ npx ng test --watch=false   # 15 בדיקות לקוח (Vitest) – דורש Nod
 ```
 
 * **50 בדיקות Unit:** כללי מעברי סטטוס, שינוי סטטוס בישות, ולידציה (דפדוף, תאריכים, ערכים לא מוכרים, Bulk), פענוח `If-Match`, מחולל הנתונים.
-* **34 בדיקות Integration** מול SQL Server 2022 אמיתי (Testcontainers) דרך ה־API עצמו (`WebApplicationFactory`): סינון, חיפוש, מיון ודפדוף מול ספירה ישירה בבסיס הנתונים; 400 לכל פרמטר לא תקין; Summary ו־Invalidation של ה־Cache; ‏404/409/422/428; **5 עדכונים מקבילים עם אותו `ETag` – בדיוק אחד מצליח ונכתבת שורת היסטוריה אחת**; Bulk עם הצלחה חלקית; Migrations, אינדקסים ו־Seed חוזר.
+* **35 בדיקות Integration** מול SQL Server 2022 אמיתי (Testcontainers) דרך ה־API עצמו (`WebApplicationFactory`): סינון, חיפוש, מיון ודפדוף מול ספירה ישירה בבסיס הנתונים; 400 לכל פרמטר לא תקין; Summary ו־Invalidation של ה־Cache; ‏404/409/422/428; **5 עדכונים מקבילים עם אותו `ETag` – בדיוק אחד מצליח ונכתבת שורת היסטוריה אחת**; Bulk עם הצלחה חלקית; Migrations, אינדקסים ו־Seed חוזר.
 
 * **15 בדיקות לקוח (Vitest):** ה־Store – Debounce של החיפוש (בקשה אחת אחרי שההקלדה נעצרת), ביטול בקשה קודמת (`switchMap`), שמירת הנתונים הקודמים בזמן טעינה, סיכום שלא נטען מחדש בדפדוף, וסנכרון עם הכתובת; ההמרה בין הכתובת לשאילתה; הודעות השגיאה; ובמגירת הפרטים – `If-Match`, פתיחת חלון ה־409 ו"להעביר בכל זאת" מול הגרסה החדשה.
 
@@ -128,7 +128,7 @@ npx ng test --watch=false   # 15 בדיקות לקוח (Vitest) – דורש Nod
 | 3 היסטוריה (Audit) | [`RequestStatusHistory`](backend/src/RequestsManagement.Application/Requests/Entities/RequestStatusHistory.cs), [`ServiceRequest.ChangeStatus`](backend/src/RequestsManagement.Application/Requests/Entities/ServiceRequest.cs) | `UpdateStatusTests` (כל עדכון בודק את שורת ההיסטוריה), `SummaryAndDetailsTests` | [API](#api) |
 | 4 Bulk עד 100, הצלחה חלקית | [`RequestCommandService.BulkUpdateStatusAsync`](backend/src/RequestsManagement.Application/Requests/Services/RequestCommandService.cs), [`RequestRepository.SaveStatusChangesAsync`](backend/src/RequestsManagement.Infrastructure/Persistence/Repositories/RequestRepository.cs) | `BulkUpdateTests`, `ValidatorTests` | [Bulk](#עדכון-מרוכז-bulk--הצלחה-חלקית) |
 | 7 Cache | [`MemorySummaryCache`](backend/src/RequestsManagement.Infrastructure/Caching/MemorySummaryCache.cs), [`RequestQueryService.GetSummaryAsync`](backend/src/RequestsManagement.Application/Requests/Services/RequestQueryService.cs) | `SummaryAndDetailsTests` | [Cache](#cache) |
-| 8 בדיקות, כולל Integration ו־Concurrency | [`tests/`](backend/tests), `*.spec.ts` | 50 Unit + 34 Integration + 15 לקוח | [בדיקות אוטומטיות](#בדיקות-אוטומטיות) |
+| 8 בדיקות, כולל Integration ו־Concurrency | [`tests/`](backend/tests), `*.spec.ts` | 50 Unit + 35 Integration + 15 לקוח | [בדיקות אוטומטיות](#בדיקות-אוטומטיות) |
 | 9 תכנון | – | – | [PLAN.md](PLAN.md) |
 | 10 איכות קוד, שגיאות, Logging | [`Program.cs`](backend/src/RequestsManagement.Api/Program.cs), [`GlobalExceptionHandler`](backend/src/RequestsManagement.Api/ErrorHandling/GlobalExceptionHandler.cs) | `Invalid_parameters_return_400_naming_the_field`, `Unknown_request_returns_404_problem_details` | [Logging](#logging) |
 | 6 ביצועים על 100K | [`ServiceRequestConfiguration`](backend/src/RequestsManagement.Infrastructure/Persistence/Configurations/ServiceRequestConfiguration.cs) (אינדקסים), [`measure.py`](scripts/perf/measure.py) | [`measure.sql`](docs/performance/measure.sql), [`runs/`](docs/performance/runs) | [PERFORMANCE.md](docs/PERFORMANCE.md) |
@@ -213,7 +213,7 @@ scripts/                                 התקנה ב־Windows, הדגמת 409,
 | GET | `/api/lookups` | מטפלים וארגונים לתיבות הסינון ולבחירת המשתמש הנוכחי | 200 |
 
 **פרמטרי סינון** (ברשימה וב־Summary, כולם אופציונליים, משולבים ב־AND):
-`status` / `priority` – אחד או יותר (`?status=New&status=Waiting`) · `organizationName` – מתחיל ב־ · `assignedTo` – שם מדויק · `createdFrom` / `createdTo` – תאריכים, כולל (UTC) · `search` – מכיל, בכותרת או בשם הארגון.
+`status` / `priority` – אחד או יותר (`?status=New&status=Waiting`) · `organizationName` – מתחיל ב־ · `assignedTo` – שם מדויק · `createdFrom` / `createdTo` – תאריכים, כולל (UTC) · `search` – מכיל, בכותרת או בשם הארגון; מספר בלבד מוצא גם את הפנייה עם המזהה הזה (תוספת מעבר לדרישה).
 ברשימה בלבד: `page` (1–100,000), `pageSize` (1–100, ברירת מחדל 20), `sortBy` (`createdAt` · `updatedAt` · `priority` · `status` · `title` · `organizationName`), `sortDirection` (`asc` · `desc`). המיון תמיד ממשיך לפי `Id`, כדי שהדפדוף יהיה יציב.
 
 **ולידציה ושגיאות:** פרמטר לא חוקי (`pageSize=500`, `status=99`, `sortBy=password`, טווח תאריכים הפוך, תאריך לא תקין, סטטוס לא מוכר בגוף הבקשה) מחזיר **400** עם שם השדה. כל שגיאה מוחזרת כ־**Problem Details** (RFC 9457) מ־[`GlobalExceptionHandler`](backend/src/RequestsManagement.Api/ErrorHandling/GlobalExceptionHandler.cs), כולל `traceId`. שגיאה לא צפויה נרשמת בלוג ומוחזרת כ־500 בלי פרטים פנימיים. Enums מוחזרים כשמות (`"InProgress"`) בכל תשובה, גם בגוף של שגיאה.

@@ -50,8 +50,16 @@ internal static class RequestQueryExtensions
         if (!string.IsNullOrWhiteSpace(filter.Search))
         {
             // Translated to LIKE '%term%' (EF escapes %, _ and [ in the term).
+            // A term made only of digits is also treated as a request number (Id = n, a primary-key match).
             var term = filter.Search.Trim();
-            query = query.Where(r => r.Title.Contains(term) || r.OrganizationName.Contains(term));
+            if (term.All(char.IsAsciiDigit) && int.TryParse(term, out var id))
+            {
+                query = query.Where(r => r.Id == id || r.Title.Contains(term) || r.OrganizationName.Contains(term));
+            }
+            else
+            {
+                query = query.Where(r => r.Title.Contains(term) || r.OrganizationName.Contains(term));
+            }
         }
 
         return query;
