@@ -11,7 +11,8 @@
 | README (כאן) | מדריך לבודק, הרצה, טכנולוגיות, מבנה, בסיס נתונים, Concurrency, Bulk, Cache, החלטות, מגבלות, שימוש ב־AI |
 | [PLAN.md](PLAN.md) | פירוק האפיון למשימות: תוצרים, תלויות, סדר ביצוע, הערכת מאמץ וקישור לדרישות |
 | [docs/INSTALL.he.md](docs/INSTALL.he.md) | התקנת הסביבה ב־Windows (Git, Docker Desktop, ‎.NET, Node) |
-| docs/PERFORMANCE.md | מדידות על 100,000 פניות: Execution Plans, אינדקסים, Bottlenecks ושיפורים (בשלב הבא) |
+| [docs/PERFORMANCE.md](docs/PERFORMANCE.md) | מדידות על 100,000 פניות: Execution Plans, אינדקסים, צוואר בקבוק ושיפורים |
+| [docs/performance/measure.sql](docs/performance/measure.sql) | סקריפט המדידה (רץ גם ב־SSMS) |
 
 ---
 
@@ -107,7 +108,8 @@ dotnet test     # דורש ‎.NET 10 SDK ו־Docker פתוח: בדיקות ה־
 | 8 בדיקות, כולל Integration ו־Concurrency | [`tests/`](backend/tests) | 50 Unit + 34 Integration | [בדיקות אוטומטיות](#בדיקות-אוטומטיות) |
 | 9 תכנון | – | – | [PLAN.md](PLAN.md) |
 | 10 איכות קוד, שגיאות, Logging | [`Program.cs`](backend/src/RequestsManagement.Api/Program.cs), [`GlobalExceptionHandler`](backend/src/RequestsManagement.Api/ErrorHandling/GlobalExceptionHandler.cs) | `Invalid_parameters_return_400_naming_the_field`, `Unknown_request_returns_404_problem_details` | [Logging](#logging) |
-| 5, 6, 11 | בשלבים הבאים | | |
+| 6 ביצועים על 100K | [`ServiceRequestConfiguration`](backend/src/RequestsManagement.Infrastructure/Persistence/Configurations/ServiceRequestConfiguration.cs) (אינדקסים), [`measure.py`](scripts/perf/measure.py) | [`measure.sql`](docs/performance/measure.sql), [`runs/`](docs/performance/runs) | [PERFORMANCE.md](docs/PERFORMANCE.md) |
+| 5, 11 | בשלבים הבאים | | |
 
 ### פתרון תקלות
 
@@ -198,22 +200,38 @@ Requests                                  RequestStatusHistory
 * כל התאריכים ב־UTC, בדיוק של מילישנייה.
 * `RowVersion` מתעדכן על ידי SQL Server בכל שינוי, ומשמש לזיהוי עדכונים מתחרים.
 
-**אינדקסים** (הנימוקים והמדידות יופיעו ב־docs/PERFORMANCE.md):
+**אינדקסים** (הנימוקים, המדידות ו־Execution Plans ב־[docs/PERFORMANCE.md](docs/PERFORMANCE.md)):
 
 | אינדקס | בשביל מה |
 |---|---|
-| `IX_Requests_Status_CreatedAt` INCLUDE `Priority` | סינון לפי סטטוס עם מיון ברירת המחדל (החדשות קודם), וספירה לפי סטטוס |
-| `IX_Requests_CreatedAt` | הרשימה ללא סינון ממוינת לפי תאריך, וטווח תאריכים |
-| `IX_Requests_AssignedTo_Status` | "הפניות של מטפל X" |
-| `IX_Requests_OrganizationName` | סינון לפי ארגון |
-| `IX_Requests_Priority_Status` | סינון וספירה לפי עדיפות |
-| `IX_RequestStatusHistory_RequestId_ChangedAt` | היסטוריה של פנייה, מהחדש לישן |
+| `IX_Requests_CreatedAt_Id` ‏(CreatedAt DESC, Id DESC) | הרשימה ללא סינון בסדר ברירת המחדל (ובסדר ההפוך); טווח תאריכים |
+| `IX_Requests_Status_CreatedAt_Id` INCLUDE `Priority` | סינון לפי סטטוס בסדר הרשימה; ספירה לפי סטטוס |
+| `IX_Requests_AssignedTo_CreatedAt_Id` INCLUDE `Status` | הפניות של מטפל (גם עם סטטוס); רשימת המטפלים |
+| `IX_Requests_OrganizationName_CreatedAt_Id` | סינון לפי ארגון; רשימת הארגונים |
+| `IX_Requests_Priority_Status` | סינון וספירה לפי עדיפות; הנתונים המסכמים |
+| `IX_RequestStatusHistory_RequestId_ChangedAt` | היסטוריה של פנייה, מהחדש לישן; "מי שינה אחרון" ב־409 |
+
+כל אינדקס שמשרת את הרשימה מסתיים ב־`CreatedAt DESC, Id DESC`, בדיוק כמו ה־`ORDER BY`. כך SQL Server קורא את העמוד בסדר האינדקס ועוצר אחרי 20 שורות. במדידה הראשונה האינדקסים נגמרו ב־`CreatedAt DESC` בלבד, ושאילתת העמוד סרקה ומיינה את כל הטבלה. התיקון הוריד את הרשימה ללא סינון מ־2,067 ל־221 reads, ואת הסינון לפי סטטוס מ־1,866 ל־110 ([הפירוט](docs/PERFORMANCE.md#מה-המדידה-הראשונה-גילתה--ומה-תוקן)).
 
 **נתוני הבדיקה:** 100,000 פניות בדיוניות בעברית: 500 ארגונים, 30 מטפלים, תאריכים על פני שנתיים, והתפלגות לא אחידה של סטטוסים ועדיפויות. לכל פנייה שאינה "חדשה" נוצרת היסטוריה שעוברת רק במעברים מותרים ומסתיימת בסטטוס הנוכחי שלה. המחולל דטרמיניסטי (Seed קבוע), כך שכל הרצה יוצרת אותם נתונים ואפשר להשוות מדידות. הטעינה ב־`SqlBulkCopy`, ואחריה בנייה מחדש של האינדקסים ועדכון סטטיסטיקות.
 
 ## ביצועים
 
-בשלב הבא.
+המדידות המלאות – Execution Plans בפועל, השוואה עם ובלי כל אינדקס, והסקריפט להרצה חוזרת – ב־[docs/PERFORMANCE.md](docs/PERFORMANCE.md). כל המספרים נמדדו על 100,000 פניות.
+
+| קריאה ל־API | זמן (חציון) | Logical reads |
+|---|---:|---:|
+| רשימה ללא סינון, עמוד 1 | 13ms | 221 |
+| סינון לפי סטטוס | 6ms | 110 |
+| 2 סטטוסים + עדיפות + תאריך | 10ms | 871 |
+| מטפל | 4ms | 92 |
+| **חיפוש חופשי** | **315ms** | 2,502 – צוואר הבקבוק |
+| עמוד 500, מיון לפי כותרת | 211ms | 1,916 |
+| נתונים מסכמים ללא סינון (Cache) | 1ms | – |
+| נתונים מסכמים עם סינון | 8ms | 66 |
+| פנייה בודדת / היסטוריה | 2ms | 6 |
+
+**צוואר הבקבוק:** חיפוש "מכיל" (`LIKE '%x%'`) לא יכול להשתמש באינדקס, וה־`COUNT` שלו סורק את כל הטבלה. רוב הזמן הוא CPU של השוואת מחרוזות לפי כללי השפה. ניסוי מדוד עם עמודה מחושבת ו־Collation בינארי הוריד את אותה שאילתה מ־306ms ל־22ms CPU (פי 14). זה השיפור המוצע, ובייצור – Full-Text Search ([פירוט](docs/PERFORMANCE.md#צוואר-הבקבוק-חיפוש-מכיל)).
 
 ## עדכון סטטוס ו־Concurrency
 
