@@ -39,12 +39,12 @@ GO
 -- @scenario list-status-priority-date: Two statuses + priority High + created since 2025-06-01, newest first
 EXEC sp_executesql N'SELECT COUNT(*)
 FROM [Requests] AS [r]
-WHERE [r].[Status] IN (@values1, @values2) AND [r].[Priority] = @values11 AND [r].[CreatedAt] >= @fromUtc', N'@values1 tinyint,@values2 tinyint,@values11 tinyint,@fromUtc datetime2(3)', @values1 = 1, @values2 = 2, @values11 = 2, @fromUtc = '2025-06-01T00:00:00';
+WHERE [r].[Status] IN (@values2, @values3) AND [r].[Priority] = @values11 AND [r].[CreatedAt] >= @fromUtc', N'@values2 tinyint,@values3 tinyint,@values11 tinyint,@fromUtc datetime2(3)', @values2 = 1, @values3 = 2, @values11 = 2, @fromUtc = '2025-06-01T00:00:00';
 EXEC sp_executesql N'SELECT [r].[Id], [r].[Title], [r].[OrganizationName], [r].[Status], [r].[Priority], [r].[AssignedTo], [r].[CreatedAt], [r].[UpdatedAt], [r].[RowVersion]
 FROM [Requests] AS [r]
-WHERE [r].[Status] IN (@values1, @values2) AND [r].[Priority] = @values11 AND [r].[CreatedAt] >= @fromUtc
+WHERE [r].[Status] IN (@values2, @values3) AND [r].[Priority] = @values11 AND [r].[CreatedAt] >= @fromUtc
 ORDER BY [r].[CreatedAt] DESC, [r].[Id] DESC
-OFFSET @p ROWS FETCH NEXT @p0 ROWS ONLY', N'@values1 tinyint,@values2 tinyint,@values11 tinyint,@fromUtc datetime2(3),@p int,@p0 int', @values1 = 1, @values2 = 2, @values11 = 2, @fromUtc = '2025-06-01T00:00:00', @p = 0, @p0 = 20;
+OFFSET @p ROWS FETCH NEXT @p0 ROWS ONLY', N'@values2 tinyint,@values3 tinyint,@values11 tinyint,@fromUtc datetime2(3),@p int,@p0 int', @values2 = 1, @values3 = 2, @values11 = 2, @fromUtc = '2025-06-01T00:00:00', @p = 0, @p0 = 20;
 GO
 
 -- @scenario list-handler: One handler's requests, newest first
@@ -78,6 +78,20 @@ FROM [Requests] AS [r]
 WHERE [r].[Title] LIKE @term_contains ESCAPE N''\'' OR [r].[OrganizationName] LIKE @term_contains ESCAPE N''\''
 ORDER BY [r].[CreatedAt] DESC, [r].[Id] DESC
 OFFSET @p ROWS FETCH NEXT @p0 ROWS ONLY', N'@term_contains nvarchar(200),@p int,@p0 int', @term_contains = N'%היתר%', @p = 0, @p0 = 20;
+GO
+
+-- @scenario list-sort-updated: No filter, sorted by last update (newest first), page 1 – a sort without a dedicated index
+EXEC sp_executesql N'SELECT [r].[Id], [r].[Title], [r].[OrganizationName], [r].[Status], [r].[Priority], [r].[AssignedTo], [r].[CreatedAt], [r].[UpdatedAt], [r].[RowVersion]
+FROM [Requests] AS [r]
+ORDER BY [r].[UpdatedAt] DESC, [r].[Id] DESC
+OFFSET @p ROWS FETCH NEXT @p1 ROWS ONLY', N'@p int,@p1 int', @p = 0, @p1 = 20;
+GO
+
+-- @scenario list-sort-oldest: No filter, oldest first (the default sort reversed), page 1
+EXEC sp_executesql N'SELECT [r].[Id], [r].[Title], [r].[OrganizationName], [r].[Status], [r].[Priority], [r].[AssignedTo], [r].[CreatedAt], [r].[UpdatedAt], [r].[RowVersion]
+FROM [Requests] AS [r]
+ORDER BY [r].[CreatedAt], [r].[Id]
+OFFSET @p ROWS FETCH NEXT @p1 ROWS ONLY', N'@p int,@p1 int', @p = 0, @p1 = 20;
 GO
 
 -- @scenario list-deep-page: Sorted by title, page 500 of 100 rows (OFFSET 49,900)
@@ -115,13 +129,19 @@ ORDER BY [r].[ChangedAt] DESC, [r].[Id] DESC', N'@id int', @id = 50000;
 GO
 
 -- @scenario lookups: Distinct handlers and organizations for the filter drop-downs
-EXEC sp_executesql N'SELECT DISTINCT [r].[AssignedTo]
-FROM [Requests] AS [r]
-WHERE [r].[AssignedTo] IS NOT NULL
-ORDER BY [r].[AssignedTo]';
-EXEC sp_executesql N'SELECT DISTINCT [r].[OrganizationName]
-FROM [Requests] AS [r]
-ORDER BY [r].[OrganizationName]';
+EXEC sp_executesql N'SELECT [r0].[AssignedTo]
+FROM (
+    SELECT DISTINCT [r].[AssignedTo]
+    FROM [Requests] AS [r]
+    WHERE [r].[AssignedTo] IS NOT NULL
+) AS [r0]
+ORDER BY [r0].[AssignedTo]';
+EXEC sp_executesql N'SELECT [r0].[OrganizationName]
+FROM (
+    SELECT DISTINCT [r].[OrganizationName]
+    FROM [Requests] AS [r]
+) AS [r0]
+ORDER BY [r0].[OrganizationName]';
 GO
 
 SET STATISTICS IO, TIME OFF;
