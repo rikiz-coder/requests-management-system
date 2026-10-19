@@ -1,1 +1,20 @@
-/* You can add global styles to this file, and also import other style files */
+@use '@angular/material' as mat;
+
+html {
+  color-scheme: light;
+  @include mat.theme((
+    color: (primary: mat.$azure-palette, tertiary: mat.$violet-palette),
+    typography: (plain-family: 'Heebo, Arial, sans-serif', brand-family: 'Heebo, Arial, sans-serif'),
+    density: -1,
+  ));
+}
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--mat-sys-surface-container-lowest);
+  color: var(--mat-sys-on-surface);
+  font: var(--mat-sys-body-medium);
+  font-family: Heebo, Arial, sans-serif;
+}

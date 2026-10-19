@@ -53,6 +53,30 @@ jobs:
             echo "::notice title=Tests::${name}: ${passed}/${total} passed, ${failed} failed"
           done
 
+  frontend:
+    name: Frontend – tests and production build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend/requests-web
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/requests-web/package-lock.json
+
+      - name: Install
+        run: npm ci --no-audit --no-fund
+
+      - name: Tests (Vitest)
+        run: ../../.github/scripts/run.sh npx ng test --watch=false
+
+      - name: Production build
+        run: ../../.github/scripts/run.sh npx ng build --configuration production
+
   compose:
     name: Docker Compose – SQL Server, 100,000 requests, API
     runs-on: ubuntu-latest
@@ -99,6 +123,12 @@ jobs:
             echo "::notice title=API::$url -> $code"
             case "$code" in 200*) ;; *) exit 1 ;; esac
           done
+
+      - name: Web app is served and proxies the API
+        run: |
+          curl -fsS http://localhost:8080/ | grep -q "<app-root>"
+          curl -fsS "http://localhost:8080/api/requests?pageSize=1" | grep -q '"totalCount":100000'
+          echo "::notice title=Web::index.html and /api through nginx OK"
 
       - name: 409 demo script (as in the README)
         shell: pwsh

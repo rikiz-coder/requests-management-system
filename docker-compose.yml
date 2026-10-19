@@ -1,10 +1,10 @@
 # Runs the whole system locally:
-#   docker compose up -d --build       SQL Server + test data (first run) + API
+#   docker compose up -d --build       SQL Server + test data (first run) + API + web app (http://localhost:8080)
 #   docker compose run --rm seeder --reseed   recreate the 100,000 test requests
 #   docker compose down -v             stop and delete the data
 #
 # The password is for local development only. Override it, or the ports, with environment
-# variables or a .env file next to this file (MSSQL_SA_PASSWORD, SQL_PORT, API_PORT).
+# variables or a .env file next to this file (MSSQL_SA_PASSWORD, SQL_PORT, API_PORT, WEB_PORT).
 
 x-connection-string: &connection-string
   ConnectionStrings__RequestsDb: "Server=sqlserver,1433;Database=RequestsManagement;User Id=sa;Password=${MSSQL_SA_PASSWORD:-Requests_Dev_Passw0rd!};TrustServerCertificate=True"
@@ -55,6 +55,15 @@ services:
         condition: service_healthy
       seeder:
         condition: service_completed_successfully
+
+  # The Angular app (nginx), which also forwards /api to the API.
+  web:
+    build:
+      context: ./frontend/requests-web
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    depends_on:
+      - api
 
 volumes:
   sqldata:
