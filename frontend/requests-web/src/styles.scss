@@ -11,6 +11,9 @@ html {
 
 html, body { height: 100%; }
 
+// The closed side drawer sits just outside the viewport (on the left in RTL); never let it create a horizontal scroll.
+body { overflow: hidden; }
+
 body {
   margin: 0;
   background: var(--mat-sys-surface-container-lowest);

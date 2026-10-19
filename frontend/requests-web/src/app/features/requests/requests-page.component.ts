@@ -57,8 +57,8 @@ import { SummaryPanelComponent } from './summary-panel.component';
   `,
   styles: `
     :host { display: block; height: 100%; }
-    .container { height: 100%; background: transparent; }
-    .content { display: flex; flex-direction: column; gap: 16px; padding: 16px 24px; }
+    .container { height: 100%; background: transparent; overflow: hidden; }
+    .content { display: flex; flex-direction: column; gap: 16px; padding: 16px 24px; overflow-x: hidden; }
     .drawer { width: min(460px, 92vw); }
   `,
 })

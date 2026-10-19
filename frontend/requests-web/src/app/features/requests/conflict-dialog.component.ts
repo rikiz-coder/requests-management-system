@@ -25,7 +25,7 @@ export type ConflictDialogResult = 'reload' | 'apply';
   template: `
     <h2 mat-dialog-title>הפנייה עודכנה בינתיים על ידי משתמש אחר</h2>
     <mat-dialog-content>
-      <p>השינוי שלך ל<strong>{{ labels[data.attempted] }}</strong> <strong>לא נשמר</strong>, כדי לא לדרוס את העדכון של המשתמש האחר.</p>
+      <p>השינוי שלך ל<strong>{{ labels[data.attempted] }}</strong>&nbsp;<strong>לא נשמר</strong>, כדי לא לדרוס את העדכון של המשתמש האחר.</p>
       @if (current; as c) {
         <p>הסטטוס עכשיו: <strong>{{ labels[c.status] }}</strong></p>
       }
