@@ -5,6 +5,11 @@
 #>
 $allOk = $true
 
+# Reload PATH from the registry: a terminal opened before the installation still has the old PATH
+# and would report freshly installed tools as missing.
+$env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' +
+            [Environment]::GetEnvironmentVariable('Path', 'User')
+
 function Check([string]$Name, [string]$Exe, [string[]]$Arguments, [bool]$Required = $true) {
     $found = $false
     $out = ''

@@ -163,7 +163,7 @@ npm start      # http://localhost:4200
 | "running scripts is disabled on this system" | מריצים עם `powershell -ExecutionPolicy Bypass -File ...` כמו בהוראות |
 | Docker Desktop מציג "WSL needs updating" | מריצים `wsl --update` ב־PowerShell כמנהל ומפעילים את Docker מחדש |
 | Docker Desktop מציג "Virtualization support not detected" | מפעילים וירטואליזציה ב־BIOS (Intel VT-x / AMD-V, לפעמים בשם SVM) |
-| `docker` לא מזוהה אחרי ההתקנה | פותחים חלון PowerShell חדש, או מתנתקים ומתחברים מחדש ל־Windows |
+| `docker` / `dotnet` / `node` לא מזוהים אחרי ההתקנה (או `[MISSING]` בסקריפט הבדיקה) | החלון נפתח לפני ההתקנה ולא מכיר את התוכנות החדשות. סוגרים את **כל** חלונות PowerShell ופותחים חלון חדש. אם זה לא עוזר, מתנתקים ומתחברים מחדש ל־Windows |
 | "permission denied" / "docker-users" | מתנתקים ומתחברים מחדש ל־Windows. הסקריפט הוסיף אותך לקבוצה, וזה נכנס לתוקף רק אחרי התחברות מחדש |
 | "port is already allocated" | פורט תפוס על ידי תוכנה אחרת. משנים את הפורט בקובץ `.env` ומריצים שוב `docker compose up -d` |
 | ה־API לא עולה ובלוג מופיע "Login failed" | SQL Server עוד לא סיים לעלות. ממתינים כחצי דקה ומריצים `docker compose restart api` |
