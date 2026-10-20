@@ -46,15 +46,16 @@ internal sealed class ServiceRequestConfiguration : IEntityTypeConfiguration<Ser
 
         // Free-text search ("contains" in the title or the organization name). LIKE '%term%' cannot seek, so it
         // scans; this makes the scan cheap (measured in docs/PERFORMANCE.md):
-        // * one persisted computed column, so SQL Server keeps it in sync by itself (it only changes if the
-        //   title or the organization changes, which never happens here);
+        // * one computed column, so SQL Server keeps it in sync by itself and no code has to update it. It is
+        //   not PERSISTED in the table (that made every table scan 60% bigger, measured); its value is stored
+        //   only in the index below, which is the only place that reads it;
         // * a binary collation: comparing bytes instead of applying linguistic rules is most of the gain;
         // * UPPER on both sides keeps the search case-insensitive for Latin letters (Hebrew has no case);
         // * a separator that cannot be typed, so a term never matches across the title/organization boundary.
         builder.Property<string>(SearchText)
             .HasComputedColumnSql(
                 "CAST(UPPER([Title] + NCHAR(31) + [OrganizationName]) AS nvarchar(401)) COLLATE Latin1_General_100_BIN2",
-                stored: true);
+                stored: false);
 
         // Default list (no filter), newest first; date-range filters. SearchText is included, so a search reads
         // this index in list order and checks the text in the index itself: the first page stops after 20
