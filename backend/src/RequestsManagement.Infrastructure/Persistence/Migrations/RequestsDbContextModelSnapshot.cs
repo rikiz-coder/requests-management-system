@@ -86,6 +86,11 @@ namespace RequestsManagement.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
 
+                    b.Property<string>("SearchText")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("nvarchar(max)")
+                        .HasComputedColumnSql("CAST(UPPER([Title] + NCHAR(31) + [OrganizationName]) AS nvarchar(401)) COLLATE Latin1_General_100_BIN2", true);
+
                     b.Property<byte>("Status")
                         .HasColumnType("tinyint");
 
@@ -107,6 +112,8 @@ namespace RequestsManagement.Infrastructure.Persistence.Migrations
 
                     b.HasIndex(new[] { "CreatedAt", "Id" }, "IX_Requests_CreatedAt_Id")
                         .IsDescending();
+
+                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex(new[] { "CreatedAt", "Id" }, "IX_Requests_CreatedAt_Id"), new[] { "SearchText" });
 
                     b.HasIndex(new[] { "OrganizationName", "CreatedAt", "Id" }, "IX_Requests_OrganizationName_CreatedAt_Id")
                         .IsDescending(false, true, true);
