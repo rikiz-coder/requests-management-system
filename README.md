@@ -106,13 +106,13 @@ dotnet test     # דורש ‎.NET 10 SDK ו־Docker פתוח: בדיקות ה־
 ```powershell
 cd frontend\requests-web
 npm ci
-npx ng test --watch=false   # 15 בדיקות לקוח (Vitest) – דורש Node.js
+npx ng test --watch=false   # 16 בדיקות לקוח (Vitest) – דורש Node.js
 ```
 
 * **50 בדיקות Unit:** כללי מעברי סטטוס, שינוי סטטוס בישות, ולידציה (דפדוף, תאריכים, ערכים לא מוכרים, Bulk), פענוח `If-Match`, מחולל הנתונים.
 * **35 בדיקות Integration** מול SQL Server 2022 אמיתי (Testcontainers) דרך ה־API עצמו (`WebApplicationFactory`): סינון, חיפוש, מיון ודפדוף מול ספירה ישירה בבסיס הנתונים; 400 לכל פרמטר לא תקין; Summary ו־Invalidation של ה־Cache; ‏404/409/422/428; **5 עדכונים מקבילים עם אותו `ETag` – בדיוק אחד מצליח ונכתבת שורת היסטוריה אחת**; Bulk עם הצלחה חלקית; Migrations, אינדקסים ו־Seed חוזר.
 
-* **15 בדיקות לקוח (Vitest):** ה־Store – Debounce של החיפוש (בקשה אחת אחרי שההקלדה נעצרת), ביטול בקשה קודמת (`switchMap`), שמירת הנתונים הקודמים בזמן טעינה, סיכום שלא נטען מחדש בדפדוף, וסנכרון עם הכתובת; ההמרה בין הכתובת לשאילתה; הודעות השגיאה; ובמגירת הפרטים – `If-Match`, פתיחת חלון ה־409 ו"להעביר בכל זאת" מול הגרסה החדשה.
+* **16 בדיקות לקוח (Vitest):** ה־Store – Debounce של החיפוש (בקשה אחת אחרי שההקלדה נעצרת), ביטול בקשה קודמת (`switchMap`), שמירת הנתונים הקודמים בזמן טעינה, סיכום שלא נטען מחדש בדפדוף, וסנכרון עם הכתובת; ההמרה בין הכתובת לשאילתה; הודעות השגיאה; ובמגירת הפרטים – `If-Match`, פתיחת חלון ה־409 ו"להעביר בכל זאת" מול הגרסה החדשה.
 
 בדיקות אמיתיות מול SQL Server ולא מול ספק ה־InMemory של EF: הוא לא אוכף `rowversion`, ובדיקת Concurrency מולו הייתה עוברת גם אם המנגנון שבור.
 
@@ -128,7 +128,7 @@ npx ng test --watch=false   # 15 בדיקות לקוח (Vitest) – דורש Nod
 | 5 Angular | [`requests-list.store.ts`](frontend/requests-web/src/app/features/requests/requests-list.store.ts) (URL, Debounce, `switchMap`), [`requests-page`](frontend/requests-web/src/app/features/requests/requests-page.component.ts), [`request-details`](frontend/requests-web/src/app/features/requests/request-details.component.ts) + [`conflict-dialog`](frontend/requests-web/src/app/features/requests/conflict-dialog.component.ts) (409), [`interceptors`](frontend/requests-web/src/app/core/http/interceptors.ts) | `requests-list.store.spec`, `request-details.component.spec`, `request-query.spec`, `error-messages.spec`; מסלול הדפדפן | [מבנה – הלקוח](#מבנה-הפתרון) |
 | 6 ביצועים על 100K | [`ServiceRequestConfiguration`](backend/src/RequestsManagement.Infrastructure/Persistence/Configurations/ServiceRequestConfiguration.cs) (אינדקסים), [`measure.py`](scripts/perf/measure.py) | [`measure.sql`](docs/performance/measure.sql), [`runs/`](docs/performance/runs) | [PERFORMANCE.md](docs/PERFORMANCE.md) |
 | 7 Cache | [`MemorySummaryCache`](backend/src/RequestsManagement.Infrastructure/Caching/MemorySummaryCache.cs), [`RequestQueryService.GetSummaryAsync`](backend/src/RequestsManagement.Application/Requests/Services/RequestQueryService.cs) | `SummaryAndDetailsTests` | [Cache](#cache) |
-| 8 בדיקות, כולל Integration ו־Concurrency | [`tests/`](backend/tests), `*.spec.ts` | 50 Unit + 35 Integration + 15 לקוח | [בדיקות אוטומטיות](#בדיקות-אוטומטיות) |
+| 8 בדיקות, כולל Integration ו־Concurrency | [`tests/`](backend/tests), `*.spec.ts` | 50 Unit + 35 Integration + 16 לקוח | [בדיקות אוטומטיות](#בדיקות-אוטומטיות) |
 | 9 תכנון | – | – | [PLAN.md](PLAN.md) |
 | 10 איכות קוד, שגיאות, Logging | [`Program.cs`](backend/src/RequestsManagement.Api/Program.cs), [`GlobalExceptionHandler`](backend/src/RequestsManagement.Api/ErrorHandling/GlobalExceptionHandler.cs) | `Invalid_parameters_return_400_naming_the_field`, `Unknown_request_returns_404_problem_details` | [Logging](#logging) |
 | 11 תיעוד: הרצה, טכנולוגיות, מבנה, DB ואינדקסים, Concurrency ו־Bulk, Cache, החלטות, מגבלות, AI | – | – | README זה ([טכנולוגיות](#טכנולוגיות-וגרסאות), [מבנה](#מבנה-הפתרון), [החלטות](#החלטות-טכנולוגיות-משמעותיות), [מגבלות](#מגבלות-ידועות), [AI](#שימוש-בכלי-ai)), [INSTALL.he.md](docs/INSTALL.he.md), Swagger |
@@ -415,7 +415,7 @@ Requests                                  RequestStatusHistory
 | Angular | כתב את ה־Store, הרכיבים, הבדיקות ומסלול הבדיקה בדפדפן (Playwright) | עברתי על הממשק: חיפוש, סינון, רענון, 409 משתי לשוניות, Bulk. ביקשתי תוספת: חיפוש לפי מספר פנייה |
 | תיעוד | כתב את ה־README, מדריך ההתקנה ודוח הביצועים | ה־README נבנה במבנה "מדריך לבודק" לפי דוגמה שבחרתי; עברתי על הנימוקים |
 
-**איך נבדק מה שהכלי כתב:** כל שינוי עבר ב־GitHub Actions: Build, בדיקה שה־Migrations תואמות למודל, 50 בדיקות Unit, ‏35 Integration מול SQL Server אמיתי, ‏15 בדיקות לקוח, ואז הרצת Docker Compose מלאה עם 100,000 פניות, קריאות ל־API, הממשק דרך nginx והדגמת ה־409. המספרים בדוח הביצועים נמדדו בפועל, וקובצי ה־`.sqlplan` מצורפים.
+**איך נבדק מה שהכלי כתב:** כל שינוי עבר ב־GitHub Actions: Build, בדיקה שה־Migrations תואמות למודל, 50 בדיקות Unit, ‏35 Integration מול SQL Server אמיתי, ‏16 בדיקות לקוח, ואז הרצת Docker Compose מלאה עם 100,000 פניות, קריאות ל־API, הממשק דרך nginx והדגמת ה־409. המספרים בדוח הביצועים נמדדו בפועל, וקובצי ה־`.sqlplan` מצורפים.
 
 **טעויות של הכלי שנתפסו בבדיקה ותוקנו:**
 * **אינדקסים שלא תאמו את המיון** – המדידה הראשונה הראתה סריקה ומיון של כל הטבלה, כי האינדקסים לא כללו את `Id DESC` שבסוף ה־`ORDER BY`. תוקן ב־Migration ‏`TuneIndexes` (2,067→221 reads).
