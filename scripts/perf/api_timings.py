@@ -16,6 +16,7 @@ ENDPOINTS = [
     ("List, handler", "/api/requests?assignedTo=" + urllib.parse.quote("דוד פרידמן")),
     ("List, organization prefix", "/api/requests?organizationName=" + urllib.parse.quote("כרמל")),
     ("List, free-text search", "/api/requests?search=" + urllib.parse.quote("היתר")),
+    ("List, free-text search, rare term", "/api/requests?search=" + urllib.parse.quote("רימון לוגיסטיקה")),
     ("List, page 500 sorted by title", "/api/requests?page=500&pageSize=100&sortBy=title&sortDirection=asc"),
     ("Summary, no filter (cache)", "/api/requests/summary"),
     ("Summary, priority High", "/api/requests/summary?priority=High"),

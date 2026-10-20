@@ -69,15 +69,26 @@ ORDER BY [r].[CreatedAt] DESC, [r].[Id] DESC
 OFFSET @p ROWS FETCH NEXT @p0 ROWS ONLY', N'@organization_startswith nvarchar(200),@p int,@p0 int', @organization_startswith = N'כרמל%', @p = 0, @p0 = 20;
 GO
 
--- @scenario list-search: Free-text search ("contains") in title or organization, newest first
+-- @scenario list-search: Free-text search ("contains") in title or organization, newest first – through the SearchText column
 EXEC sp_executesql N'SELECT COUNT(*)
 FROM [Requests] AS [r]
-WHERE [r].[Title] LIKE @term_contains ESCAPE N''\'' OR [r].[OrganizationName] LIKE @term_contains ESCAPE N''\''', N'@term_contains nvarchar(200)', @term_contains = N'%היתר%';
+WHERE [r].[SearchText] LIKE @pattern_contains ESCAPE N''\''', N'@pattern_contains nvarchar(4000)', @pattern_contains = N'%היתר%';
 EXEC sp_executesql N'SELECT [r].[Id], [r].[Title], [r].[OrganizationName], [r].[Status], [r].[Priority], [r].[AssignedTo], [r].[CreatedAt], [r].[UpdatedAt], [r].[RowVersion]
 FROM [Requests] AS [r]
-WHERE [r].[Title] LIKE @term_contains ESCAPE N''\'' OR [r].[OrganizationName] LIKE @term_contains ESCAPE N''\''
+WHERE [r].[SearchText] LIKE @pattern_contains ESCAPE N''\''
 ORDER BY [r].[CreatedAt] DESC, [r].[Id] DESC
-OFFSET @p ROWS FETCH NEXT @p0 ROWS ONLY', N'@term_contains nvarchar(200),@p int,@p0 int', @term_contains = N'%היתר%', @p = 0, @p0 = 20;
+OFFSET @p ROWS FETCH NEXT @p0 ROWS ONLY', N'@pattern_contains nvarchar(4000),@p int,@p0 int', @pattern_contains = N'%היתר%', @p = 0, @p0 = 20;
+GO
+
+-- @scenario list-search-rare: Free-text search for a rare term (an organization name, ~200 matches), newest first
+EXEC sp_executesql N'SELECT COUNT(*)
+FROM [Requests] AS [r]
+WHERE [r].[SearchText] LIKE @pattern_contains ESCAPE N''\''', N'@pattern_contains nvarchar(4000)', @pattern_contains = N'%רימון לוגיסטיקה%';
+EXEC sp_executesql N'SELECT [r].[Id], [r].[Title], [r].[OrganizationName], [r].[Status], [r].[Priority], [r].[AssignedTo], [r].[CreatedAt], [r].[UpdatedAt], [r].[RowVersion]
+FROM [Requests] AS [r]
+WHERE [r].[SearchText] LIKE @pattern_contains ESCAPE N''\''
+ORDER BY [r].[CreatedAt] DESC, [r].[Id] DESC
+OFFSET @p ROWS FETCH NEXT @p0 ROWS ONLY', N'@pattern_contains nvarchar(4000),@p int,@p0 int', @pattern_contains = N'%רימון לוגיסטיקה%', @p = 0, @p0 = 20;
 GO
 
 -- @scenario list-sort-updated: No filter, sorted by last update (newest first), page 1 – a sort without a dedicated index
