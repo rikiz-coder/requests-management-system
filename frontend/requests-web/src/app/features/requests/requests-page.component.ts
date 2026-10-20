@@ -34,7 +34,9 @@ import { SummaryPanelComponent } from './summary-panel.component';
 
       <mat-drawer-content class="content">
         <app-summary-panel [state]="store.summary()" [activeStatuses]="store.query().status ?? []"
-                           (statusClick)="store.toggleStatusFilter($event)" />
+                           [activePriorities]="store.query().priority ?? []"
+                           (statusClick)="store.toggleStatusFilter($event)"
+                           (priorityClick)="store.togglePriorityFilter($event)" />
 
         <app-request-filters [query]="store.query()" [lookups]="lookups.lookups()"
                              (searchChange)="store.setSearch($event)" (filterChange)="store.setFilter($event)"

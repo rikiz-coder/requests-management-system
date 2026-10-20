@@ -19,6 +19,7 @@ import {
 import {
   PagedResult,
   RequestListItem,
+  RequestPriority,
   RequestQuery,
   RequestStatus,
   RequestSummary,
@@ -115,6 +116,12 @@ export class RequestsListStore {
     const current = this.query().status ?? [];
     const next = current.includes(status) ? current.filter((s) => s !== status) : [...current, status];
     this.setFilter({ status: next });
+  }
+
+  togglePriorityFilter(priority: RequestPriority): void {
+    const current = this.query().priority ?? [];
+    const next = current.includes(priority) ? current.filter((p) => p !== priority) : [...current, priority];
+    this.setFilter({ priority: next });
   }
 
   clearFilters(): void {

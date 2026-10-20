@@ -2,11 +2,11 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import { DecimalPipe } from '@angular/common';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 
-import { PRIORITIES, RequestStatus, RequestSummary, STATUSES } from '../../core/api/models';
+import { PRIORITIES, RequestPriority, RequestStatus, RequestSummary, STATUSES } from '../../core/api/models';
 import { PRIORITY_LABELS, STATUS_LABELS } from '../../core/i18n/labels';
 import { LoadState } from './requests-list.store';
 
-/** Aggregations for the current filters; clicking a status filters the list by it. */
+/** Aggregations for the current filters; clicking a status or a priority toggles it as a filter. */
 @Component({
   selector: 'app-summary-panel',
   imports: [DecimalPipe, MatProgressBarModule],
@@ -28,10 +28,11 @@ import { LoadState } from './requests-list.store';
       </div>
       <div class="group priorities">
         @for (p of priorities; track p) {
-          <div class="tile small">
+          <button type="button" class="tile small" [class.active]="activePriorities().includes(p)"
+                  (click)="priorityClick.emit(p)" [attr.aria-pressed]="activePriorities().includes(p)">
             <span class="value">{{ data() ? (priorityCount(p) | number) : '–' }}</span>
             <span class="label">עדיפות {{ priorityLabels[p] }}</span>
-          </div>
+          </button>
         }
       </div>
     </section>
@@ -43,7 +44,7 @@ import { LoadState } from './requests-list.store';
     .total, .tile { display: flex; flex-direction: column; align-items: center; justify-content: center;
       min-width: 92px; padding: 8px 12px; border-radius: 12px; background: var(--mat-sys-surface-container); border: 2px solid transparent; }
     .tile { cursor: pointer; font: inherit; color: inherit; }
-    .tile.small { cursor: default; min-width: 80px; background: var(--mat-sys-surface-container-low); }
+    .tile.small { min-width: 80px; background: var(--mat-sys-surface-container-low); }
     .tile.active { border-color: var(--mat-sys-primary); }
     .value { font-size: 22px; font-weight: 600; }
     .label { font-size: 13px; color: var(--mat-sys-on-surface-variant); }
@@ -53,7 +54,9 @@ import { LoadState } from './requests-list.store';
 export class SummaryPanelComponent {
   readonly state = input.required<LoadState<RequestSummary>>();
   readonly activeStatuses = input<RequestStatus[]>([]);
+  readonly activePriorities = input<RequestPriority[]>([]);
   readonly statusClick = output<RequestStatus>();
+  readonly priorityClick = output<RequestPriority>();
 
   protected readonly statuses = STATUSES;
   protected readonly priorities = PRIORITIES;
@@ -65,7 +68,7 @@ export class SummaryPanelComponent {
     return this.data()?.byStatus.find((s) => s.status === status)?.count ?? 0;
   }
 
-  protected priorityCount(priority: string): number {
+  protected priorityCount(priority: RequestPriority): number {
     return this.data()?.byPriority.find((p) => p.priority === priority)?.count ?? 0;
   }
 }

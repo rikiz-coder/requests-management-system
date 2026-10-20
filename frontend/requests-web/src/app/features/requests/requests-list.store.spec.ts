@@ -130,6 +130,17 @@ describe('RequestsListStore', () => {
     expect(api.summary).toHaveBeenLastCalledWith(expect.objectContaining({ status: ['Waiting'] }));
   });
 
+  it('a priority tile toggles the priority filter on and off', () => {
+    const { store, url } = setup();
+
+    store.togglePriorityFilter('High');
+    expect(url()).toEqual({ priority: ['High'] });
+    store.togglePriorityFilter('Low');
+    expect(url()).toEqual({ priority: ['High', 'Low'] });
+    store.togglePriorityFilter('High');
+    expect(url()).toEqual({ priority: ['Low'] });
+  });
+
   it('opening a request puts its id in the URL; refresh() reloads list and summary', () => {
     const { store, api, url } = setup();
 
