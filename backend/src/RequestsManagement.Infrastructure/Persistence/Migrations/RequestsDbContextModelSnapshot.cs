@@ -89,7 +89,7 @@ namespace RequestsManagement.Infrastructure.Persistence.Migrations
                     b.Property<string>("SearchText")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("nvarchar(max)")
-                        .HasComputedColumnSql("CAST(UPPER([Title] + NCHAR(31) + [OrganizationName]) AS nvarchar(401)) COLLATE Latin1_General_100_BIN2", true);
+                        .HasComputedColumnSql("CAST(UPPER([Title] + NCHAR(31) + [OrganizationName]) AS nvarchar(401)) COLLATE Latin1_General_100_BIN2", false);
 
                     b.Property<byte>("Status")
                         .HasColumnType("tinyint");
