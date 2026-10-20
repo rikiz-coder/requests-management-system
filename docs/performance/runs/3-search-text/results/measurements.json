@@ -1,0 +1,1560 @@
+{
+  "scenarios": {
+    "list-default": "List, no filter, newest first, page 1 (20 rows) – the screen every user opens",
+    "list-status": "One status (Waiting), newest first, page 1",
+    "list-status-priority-date": "Two statuses + priority High + created since 2025-06-01, newest first",
+    "list-handler": "One handler's requests, newest first",
+    "list-organization": "Organization name starts with a prefix, newest first",
+    "list-search": "Free-text search (\"contains\") in title or organization, newest first – through the SearchText column",
+    "list-search-rare": "Free-text search for a rare term (an organization name, ~200 matches), newest first",
+    "list-sort-updated": "No filter, sorted by last update (newest first), page 1 – a sort without a dedicated index",
+    "list-sort-oldest": "No filter, oldest first (the default sort reversed), page 1",
+    "list-deep-page": "Sorted by title, page 500 of 100 rows (OFFSET 49,900)",
+    "summary-all": "Aggregations of the unfiltered view (count by status, count by priority)",
+    "summary-filtered": "Aggregations for priority = High",
+    "history": "Status history of one request, newest first",
+    "lookups": "Distinct handlers and organizations for the filter drop-downs"
+  },
+  "modes": {
+    "indexed": {
+      "list-default": {
+        "logicalReads": 224,
+        "readsByTable": {
+          "Requests": 224
+        },
+        "elapsedMsMedian": 12.21,
+        "cpuMsMedian": 13,
+        "planSummary": [
+          {
+            "operators": [
+              "Index Scan"
+            ],
+            "indexes": [
+              "IX_Requests_Priority_Status"
+            ]
+          },
+          {
+            "operators": [
+              "Index Scan",
+              "Clustered Index Seek"
+            ],
+            "indexes": [
+              "IX_Requests_CreatedAt_Id",
+              "PK_Requests"
+            ]
+          }
+        ]
+      },
+      "list-status": {
+        "logicalReads": 109,
+        "readsByTable": {
+          "Requests": 109
+        },
+        "elapsedMsMedian": 4.07,
+        "cpuMsMedian": 2,
+        "planSummary": [
+          {
+            "operators": [
+              "Index Seek"
+            ],
+            "indexes": [
+              "IX_Requests_Status_CreatedAt_Id"
+            ]
+          },
+          {
+            "operators": [
+              "Index Seek",
+              "Clustered Index Seek"
+            ],
+            "indexes": [
+              "IX_Requests_Status_CreatedAt_Id",
+              "PK_Requests"
+            ]
+          }
+        ]
+      },
+      "list-status-priority-date": {
+        "logicalReads": 644,
+        "readsByTable": {
+          "Requests": 644
+        },
+        "elapsedMsMedian": 8.15,
+        "cpuMsMedian": 4,
+        "planSummary": [
+          {
+            "operators": [
+              "Sort",
+              "Index Seek"
+            ],
+            "indexes": [
+              "IX_Requests_Status_CreatedAt_Id"
+            ]
+          },
+          {
+            "operators": [
+              "Index Seek",
+              "Clustered Index Seek"
+            ],
+            "indexes": [
+              "IX_Requests_CreatedAt_Id",
+              "PK_Requests"
+            ]
+          }
+        ]
+      },
+      "list-handler": {
+        "logicalReads": 90,
+        "readsByTable": {
+          "Requests": 90
+        },
+        "elapsedMsMedian": 0.0,
+        "cpuMsMedian": 0,
+        "planSummary": [
+          {
+            "operators": [
+              "Index Seek"
+            ],
+            "indexes": [
+              "IX_Requests_AssignedTo_CreatedAt_Id"
+            ]
+          },
+          {
+            "operators": [
+              "Index Seek",
+              "Clustered Index Seek"
+            ],
+            "indexes": [
+              "IX_Requests_AssignedTo_CreatedAt_Id",
+              "PK_Requests"
+            ]
+          }
+        ]
+      },
+      "list-organization": {
+        "logicalReads": 1857,
+        "readsByTable": {
+          "Requests": 1857,
+          "Worktable": 0
+        },
+        "elapsedMsMedian": 32.67,
+        "cpuMsMedian": 32,
+        "planSummary": [
+          {
+            "operators": [
+              "Index Seek"
+            ],
+            "indexes": [
+              "IX_Requests_OrganizationName_CreatedAt_Id"
+            ]
+          },
+          {
+            "operators": [
+              "Sort",
+              "Clustered Index Scan"
+            ],
+            "indexes": [
+              "PK_Requests"
+            ]
+          }
+        ]
+      },
+      "list-search": {
+        "logicalReads": 1394,
+        "readsByTable": {
+          "Requests": 1394
+        },
+        "elapsedMsMedian": 28.5,
+        "cpuMsMedian": 26,
+        "planSummary": [
+          {
+            "operators": [
+              "Index Scan"
+            ],
+            "indexes": [
+              "IX_Requests_CreatedAt_Id"
+            ]
+          },
+          {
+            "operators": [
+              "Index Scan",
+              "Clustered Index Seek"
+            ],
+            "indexes": [
+              "IX_Requests_CreatedAt_Id",
+              "PK_Requests"
+            ]
+          }
+        ]
+      },
+      "list-search-rare": {
+        "logicalReads": 1578,
+        "readsByTable": {
+          "Requests": 1578
+        },
+        "elapsedMsMedian": 32.57,
+        "cpuMsMedian": 31,
+        "planSummary": [
+          {
+            "operators": [
+              "Index Scan"
+            ],
+            "indexes": [
+              "IX_Requests_CreatedAt_Id"
+            ]
+          },
+          {
+            "operators": [
+              "Index Scan",
+              "Clustered Index Seek"
+            ],
+            "indexes": [
+              "IX_Requests_CreatedAt_Id",
+              "PK_Requests"
+            ]
+          }
+        ]
+      },
+      "list-sort-updated": {
+        "logicalReads": 1916,
+        "readsByTable": {
+          "Worktable": 0,
+          "Requests": 1916
+        },
+        "elapsedMsMedian": 41.93,
+        "cpuMsMedian": 142,
+        "planSummary": [
+          {
+            "operators": [
+              "Sort",
+              "Clustered Index Scan"
+            ],
+            "indexes": [
+              "PK_Requests"
+            ]
+          }
+        ]
+      },
+      "list-sort-oldest": {
+        "logicalReads": 73,
+        "readsByTable": {
+          "Requests": 73
+        },
+        "elapsedMsMedian": 0.0,
+        "cpuMsMedian": 0,
+        "planSummary": [
+          {
+            "operators": [
+              "Index Scan",
+              "Clustered Index Seek"
+            ],
+            "indexes": [
+              "IX_Requests_CreatedAt_Id",
+              "PK_Requests"
+            ]
+          }
+        ]
+      },
+      "list-deep-page": {
+        "logicalReads": 1916,
+        "readsByTable": {
+          "Worktable": 0,
+          "Requests": 1916
+        },
+        "elapsedMsMedian": 176.01,
+        "cpuMsMedian": 522,
+        "planSummary": [
+          {
+            "operators": [
+              "Sort",
+              "Clustered Index Scan"
+            ],
+            "indexes": [
+              "PK_Requests"
+            ]
+          }
+        ]
+      },
+      "summary-all": {
+        "logicalReads": 388,
+        "readsByTable": {
+          "Requests": 388
+        },
+        "elapsedMsMedian": 28.49,
+        "cpuMsMedian": 27,
+        "planSummary": [
+          {
+            "operators": [
+              "Index Scan"
+            ],
+            "indexes": [
+              "IX_Requests_Status_CreatedAt_Id"
+            ]
+          },
+          {
+            "operators": [
+              "Index Scan"
+            ],
+            "indexes": [
+              "IX_Requests_Priority_Status"
+            ]
+          }
+        ]
+      },
+      "summary-filtered": {
+        "logicalReads": 66,
+        "readsByTable": {
+          "Requests": 66
+        },
+        "elapsedMsMedian": 8.13,
+        "cpuMsMedian": 5,
+        "planSummary": [
+          {
+            "operators": [
+              "Index Seek"
+            ],
+            "indexes": [
+              "IX_Requests_Priority_Status"
+            ]
+          },
+          {
+            "operators": [
+              "Index Seek"
+            ],
+            "indexes": [
+              "IX_Requests_Priority_Status"
+            ]
+          }
+        ]
+      },
+      "history": {
+        "logicalReads": 15,
+        "readsByTable": {
+          "Worktable": 0,
+          "RequestStatusHistory": 15
+        },
+        "elapsedMsMedian": 0.0,
+        "cpuMsMedian": 0,
+        "planSummary": [
+          {
+            "operators": [
+              "Sort",
+              "Index Seek",
+              "Clustered Index Seek"
+            ],
+            "indexes": [
+              "IX_RequestStatusHistory_RequestId_ChangedAt",
+              "PK_RequestStatusHistory"
+            ]
+          }
+        ]
+      },
+      "lookups": {
+        "logicalReads": 1124,
+        "readsByTable": {
+          "Requests": 1124
+        },
+        "elapsedMsMedian": 44.81,
+        "cpuMsMedian": 46,
+        "planSummary": [
+          {
+            "operators": [
+              "Index Seek"
+            ],
+            "indexes": [
+              "IX_Requests_AssignedTo_CreatedAt_Id"
+            ]
+          },
+          {
+            "operators": [
+              "Index Scan"
+            ],
+            "indexes": [
+              "IX_Requests_OrganizationName_CreatedAt_Id"
+            ]
+          }
+        ]
+      }
+    },
+    "no-indexes": {
+      "list-default": {
+        "logicalReads": 3743,
+        "readsByTable": {
+          "Requests": 3743,
+          "Worktable": 0
+        },
+        "elapsedMsMedian": 50.01,
+        "cpuMsMedian": 152,
+        "planSummary": [
+          {
+            "operators": [
+              "Clustered Index Scan"
+            ],
+            "indexes": [
+              "PK_Requests"
+            ]
+          },
+          {
+            "operators": [
+              "Sort",
+              "Clustered Index Scan"
+            ],
+            "indexes": [
+              "PK_Requests"
+            ]
+          }
+        ]
+      },
+      "list-status": {
+        "logicalReads": 3654,
+        "readsByTable": {
+          "Requests": 3654,
+          "Worktable": 0
+        },
+        "elapsedMsMedian": 36.81,
+        "cpuMsMedian": 33,
+        "planSummary": [
+          {
+            "operators": [
+              "Clustered Index Scan"
+            ],
+            "indexes": [
+              "PK_Requests"
+            ]
+          },
+          {
+            "operators": [
+              "Sort",
+              "Clustered Index Scan"
+            ],
+            "indexes": [
+              "PK_Requests"
+            ]
+          }
+        ]
+      },
+      "list-status-priority-date": {
+        "logicalReads": 3654,
+        "readsByTable": {
+          "Requests": 3654,
+          "Worktable": 0
+        },
+        "elapsedMsMedian": 32.52,
+        "cpuMsMedian": 32,
+        "planSummary": [
+          {
+            "operators": [
+              "Clustered Index Scan"
+            ],
+            "indexes": [
+              "PK_Requests"
+            ]
+          },
+          {
+            "operators": [
+              "Sort",
+              "Clustered Index Scan"
+            ],
+            "indexes": [
+              "PK_Requests"
+            ]
+          }
+        ]
+      },
+      "list-handler": {
+        "logicalReads": 3654,
+        "readsByTable": {
+          "Requests": 3654,
+          "Worktable": 0
+        },
+        "elapsedMsMedian": 32.53,
+        "cpuMsMedian": 31,
+        "planSummary": [
+          {
+            "operators": [
+              "Clustered Index Scan"
+            ],
+            "indexes": [
+              "PK_Requests"
+            ]
+          },
+          {
+            "operators": [
+              "Sort",
+              "Clustered Index Scan"
+            ],
+            "indexes": [
+              "PK_Requests"
+            ]
+          }
+        ]
+      },
+      "list-organization": {
+        "logicalReads": 3654,
+        "readsByTable": {
+          "Requests": 3654,
+          "Worktable": 0
+        },
+        "elapsedMsMedian": 60.98,
+        "cpuMsMedian": 57,
+        "planSummary": [
+          {
+            "operators": [
+              "Clustered Index Scan"
+            ],
+            "indexes": [
+              "PK_Requests"
+            ]
+          },
+          {
+            "operators": [
+              "Sort",
+              "Clustered Index Scan"
+            ],
+            "indexes": [
+              "PK_Requests"
+            ]
+          }
+        ]
+      },
+      "list-search": {
+        "logicalReads": 3654,
+        "readsByTable": {
+          "Requests": 3654,
+          "Worktable": 0
+        },
+        "elapsedMsMedian": 85.38,
+        "cpuMsMedian": 82,
+        "planSummary": [
+          {
+            "operators": [
+              "Clustered Index Scan"
+            ],
+            "indexes": [
+              "PK_Requests"
+            ]
+          },
+          {
+            "operators": [
+              "Sort",
+              "Clustered Index Scan"
+            ],
+            "indexes": [
+              "PK_Requests"
+            ]
+          }
+        ]
+      },
+      "list-search-rare": {
+        "logicalReads": 3654,
+        "readsByTable": {
+          "Requests": 3654,
+          "Worktable": 0
+        },
+        "elapsedMsMedian": 81.31,
+        "cpuMsMedian": 78,
+        "planSummary": [
+          {
+            "operators": [
+              "Clustered Index Scan"
+            ],
+            "indexes": [
+              "PK_Requests"
+            ]
+          },
+          {
+            "operators": [
+              "Sort",
+              "Clustered Index Scan"
+            ],
+            "indexes": [
+              "PK_Requests"
+            ]
+          }
+        ]
+      },
+      "list-sort-updated": {
+        "logicalReads": 1916,
+        "readsByTable": {
+          "Worktable": 0,
+          "Requests": 1916
+        },
+        "elapsedMsMedian": 43.3,
+        "cpuMsMedian": 155,
+        "planSummary": [
+          {
+            "operators": [
+              "Sort",
+              "Clustered Index Scan"
+            ],
+            "indexes": [
+              "PK_Requests"
+            ]
+          }
+        ]
+      },
+      "list-sort-oldest": {
+        "logicalReads": 1916,
+        "readsByTable": {
+          "Worktable": 0,
+          "Requests": 1916
+        },
+        "elapsedMsMedian": 40.66,
+        "cpuMsMedian": 140,
+        "planSummary": [
+          {
+            "operators": [
+              "Sort",
+              "Clustered Index Scan"
+            ],
+            "indexes": [
+              "PK_Requests"
+            ]
+          }
+        ]
+      },
+      "list-deep-page": {
+        "logicalReads": 1916,
+        "readsByTable": {
+          "Worktable": 0,
+          "Requests": 1916
+        },
+        "elapsedMsMedian": 180.69,
+        "cpuMsMedian": 512,
+        "planSummary": [
+          {
+            "operators": [
+              "Sort",
+              "Clustered Index Scan"
+            ],
+            "indexes": [
+              "PK_Requests"
+            ]
+          }
+        ]
+      },
+      "summary-all": {
+        "logicalReads": 3654,
+        "readsByTable": {
+          "Worktable": 0,
+          "Workfile": 0,
+          "Requests": 3654
+        },
+        "elapsedMsMedian": 36.69,
+        "cpuMsMedian": 38,
+        "planSummary": [
+          {
+            "operators": [
+              "Hash Match",
+              "Clustered Index Scan"
+            ],
+            "indexes": [
+              "PK_Requests"
+            ]
+          },
+          {
+            "operators": [
+              "Hash Match",
+              "Clustered Index Scan"
+            ],
+            "indexes": [
+              "PK_Requests"
+            ]
+          }
+        ]
+      },
+      "summary-filtered": {
+        "logicalReads": 3654,
+        "readsByTable": {
+          "Worktable": 0,
+          "Workfile": 0,
+          "Requests": 3654
+        },
+        "elapsedMsMedian": 24.39,
+        "cpuMsMedian": 21,
+        "planSummary": [
+          {
+            "operators": [
+              "Hash Match",
+              "Clustered Index Scan"
+            ],
+            "indexes": [
+              "PK_Requests"
+            ]
+          },
+          {
+            "operators": [
+              "Clustered Index Scan"
+            ],
+            "indexes": [
+              "PK_Requests"
+            ]
+          }
+        ]
+      },
+      "history": {
+        "logicalReads": 953,
+        "readsByTable": {
+          "Worktable": 0,
+          "RequestStatusHistory": 953
+        },
+        "elapsedMsMedian": 12.21,
+        "cpuMsMedian": 11,
+        "planSummary": [
+          {
+            "operators": [
+              "Sort",
+              "Clustered Index Scan"
+            ],
+            "indexes": [
+              "PK_RequestStatusHistory"
+            ]
+          }
+        ]
+      },
+      "lookups": {
+        "logicalReads": 3654,
+        "readsByTable": {
+          "Worktable": 0,
+          "Workfile": 0,
+          "Requests": 3654
+        },
+        "elapsedMsMedian": 97.54,
+        "cpuMsMedian": 95,
+        "planSummary": [
+          {
+            "operators": [
+              "Sort",
+              "Hash Match",
+              "Clustered Index Scan"
+            ],
+            "indexes": [
+              "PK_Requests"
+            ]
+          },
+          {
+            "operators": [
+              "Sort",
+              "Hash Match",
+              "Clustered Index Scan"
+            ],
+            "indexes": [
+              "PK_Requests"
+            ]
+          }
+        ]
+      }
+    },
+    "without:IX_Requests_AssignedTo_CreatedAt_Id": {
+      "list-default": {
+        "logicalReads": 217,
+        "readsByTable": {
+          "Requests": 217
+        },
+        "elapsedMsMedian": 12.21,
+        "cpuMsMedian": 9
+      },
+      "list-status": {
+        "logicalReads": 104,
+        "readsByTable": {
+          "Requests": 104
+        },
+        "elapsedMsMedian": 4.07,
+        "cpuMsMedian": 2
+      },
+      "list-status-priority-date": {
+        "logicalReads": 638,
+        "readsByTable": {
+          "Requests": 638
+        },
+        "elapsedMsMedian": 8.13,
+        "cpuMsMedian": 4
+      },
+      "list-handler": {
+        "logicalReads": 3654,
+        "readsByTable": {
+          "Requests": 3654,
+          "Worktable": 0
+        },
+        "elapsedMsMedian": 28.46,
+        "cpuMsMedian": 26
+      },
+      "list-organization": {
+        "logicalReads": 1857,
+        "readsByTable": {
+          "Requests": 1857,
+          "Worktable": 0
+        },
+        "elapsedMsMedian": 32.53,
+        "cpuMsMedian": 32
+      },
+      "list-search": {
+        "logicalReads": 1387,
+        "readsByTable": {
+          "Requests": 1387
+        },
+        "elapsedMsMedian": 28.45,
+        "cpuMsMedian": 26
+      },
+      "list-search-rare": {
+        "logicalReads": 1572,
+        "readsByTable": {
+          "Requests": 1572
+        },
+        "elapsedMsMedian": 32.56,
+        "cpuMsMedian": 31
+      },
+      "list-sort-updated": {
+        "logicalReads": 1916,
+        "readsByTable": {
+          "Worktable": 0,
+          "Requests": 1916
+        },
+        "elapsedMsMedian": 40.66,
+        "cpuMsMedian": 141
+      },
+      "list-sort-oldest": {
+        "logicalReads": 66,
+        "readsByTable": {
+          "Requests": 66
+        },
+        "elapsedMsMedian": 0.0,
+        "cpuMsMedian": 0
+      },
+      "list-deep-page": {
+        "logicalReads": 1916,
+        "readsByTable": {
+          "Worktable": 0,
+          "Requests": 1916
+        },
+        "elapsedMsMedian": 176.03,
+        "cpuMsMedian": 515
+      },
+      "summary-all": {
+        "logicalReads": 389,
+        "readsByTable": {
+          "Requests": 389
+        },
+        "elapsedMsMedian": 28.45,
+        "cpuMsMedian": 26
+      },
+      "summary-filtered": {
+        "logicalReads": 66,
+        "readsByTable": {
+          "Requests": 66
+        },
+        "elapsedMsMedian": 8.13,
+        "cpuMsMedian": 5
+      },
+      "history": {
+        "logicalReads": 15,
+        "readsByTable": {
+          "Worktable": 0,
+          "RequestStatusHistory": 15
+        },
+        "elapsedMsMedian": 0.0,
+        "cpuMsMedian": 0
+      },
+      "lookups": {
+        "logicalReads": 2470,
+        "readsByTable": {
+          "Worktable": 0,
+          "Workfile": 0,
+          "Requests": 2470
+        },
+        "elapsedMsMedian": 69.26,
+        "cpuMsMedian": 67
+      }
+    },
+    "without:IX_Requests_CreatedAt_Id": {
+      "list-default": {
+        "logicalReads": 2067,
+        "readsByTable": {
+          "Requests": 2067,
+          "Worktable": 0
+        },
+        "elapsedMsMedian": 50.03,
+        "cpuMsMedian": 149
+      },
+      "list-status": {
+        "logicalReads": 104,
+        "readsByTable": {
+          "Requests": 104
+        },
+        "elapsedMsMedian": 4.07,
+        "cpuMsMedian": 2
+      },
+      "list-status-priority-date": {
+        "logicalReads": 1942,
+        "readsByTable": {
+          "Requests": 1942,
+          "Worktable": 0
+        },
+        "elapsedMsMedian": 24.34,
+        "cpuMsMedian": 21
+      },
+      "list-handler": {
+        "logicalReads": 83,
+        "readsByTable": {
+          "Requests": 83
+        },
+        "elapsedMsMedian": 0.0,
+        "cpuMsMedian": 0
+      },
+      "list-organization": {
+        "logicalReads": 1857,
+        "readsByTable": {
+          "Requests": 1857,
+          "Worktable": 0
+        },
+        "elapsedMsMedian": 32.57,
+        "cpuMsMedian": 34
+      },
+      "list-search": {
+        "logicalReads": 3654,
+        "readsByTable": {
+          "Requests": 3654,
+          "Worktable": 0
+        },
+        "elapsedMsMedian": 85.37,
+        "cpuMsMedian": 81
+      },
+      "list-search-rare": {
+        "logicalReads": 3654,
+        "readsByTable": {
+          "Requests": 3654,
+          "Worktable": 0
+        },
+        "elapsedMsMedian": 81.3,
+        "cpuMsMedian": 78
+      },
+      "list-sort-updated": {
+        "logicalReads": 1916,
+        "readsByTable": {
+          "Worktable": 0,
+          "Requests": 1916
+        },
+        "elapsedMsMedian": 40.0,
+        "cpuMsMedian": 142
+      },
+      "list-sort-oldest": {
+        "logicalReads": 1916,
+        "readsByTable": {
+          "Worktable": 0,
+          "Requests": 1916
+        },
+        "elapsedMsMedian": 40.68,
+        "cpuMsMedian": 139
+      },
+      "list-deep-page": {
+        "logicalReads": 1916,
+        "readsByTable": {
+          "Worktable": 0,
+          "Requests": 1916
+        },
+        "elapsedMsMedian": 175.67,
+        "cpuMsMedian": 514
+      },
+      "summary-all": {
+        "logicalReads": 389,
+        "readsByTable": {
+          "Requests": 389
+        },
+        "elapsedMsMedian": 28.45,
+        "cpuMsMedian": 27
+      },
+      "summary-filtered": {
+        "logicalReads": 66,
+        "readsByTable": {
+          "Requests": 66
+        },
+        "elapsedMsMedian": 4.07,
+        "cpuMsMedian": 5
+      },
+      "history": {
+        "logicalReads": 15,
+        "readsByTable": {
+          "Worktable": 0,
+          "RequestStatusHistory": 15
+        },
+        "elapsedMsMedian": 0.0,
+        "cpuMsMedian": 0
+      },
+      "lookups": {
+        "logicalReads": 1123,
+        "readsByTable": {
+          "Requests": 1123
+        },
+        "elapsedMsMedian": 44.72,
+        "cpuMsMedian": 42
+      }
+    },
+    "without:IX_Requests_OrganizationName_CreatedAt_Id": {
+      "list-default": {
+        "logicalReads": 217,
+        "readsByTable": {
+          "Requests": 217
+        },
+        "elapsedMsMedian": 12.18,
+        "cpuMsMedian": 9
+      },
+      "list-status": {
+        "logicalReads": 104,
+        "readsByTable": {
+          "Requests": 104
+        },
+        "elapsedMsMedian": 4.07,
+        "cpuMsMedian": 1
+      },
+      "list-status-priority-date": {
+        "logicalReads": 638,
+        "readsByTable": {
+          "Requests": 638
+        },
+        "elapsedMsMedian": 8.14,
+        "cpuMsMedian": 7
+      },
+      "list-handler": {
+        "logicalReads": 83,
+        "readsByTable": {
+          "Requests": 83
+        },
+        "elapsedMsMedian": 0.0,
+        "cpuMsMedian": 0
+      },
+      "list-organization": {
+        "logicalReads": 3654,
+        "readsByTable": {
+          "Requests": 3654,
+          "Worktable": 0
+        },
+        "elapsedMsMedian": 57.02,
+        "cpuMsMedian": 55
+      },
+      "list-search": {
+        "logicalReads": 1388,
+        "readsByTable": {
+          "Requests": 1388
+        },
+        "elapsedMsMedian": 28.45,
+        "cpuMsMedian": 26
+      },
+      "list-search-rare": {
+        "logicalReads": 1573,
+        "readsByTable": {
+          "Requests": 1573
+        },
+        "elapsedMsMedian": 32.48,
+        "cpuMsMedian": 31
+      },
+      "list-sort-updated": {
+        "logicalReads": 1916,
+        "readsByTable": {
+          "Worktable": 0,
+          "Requests": 1916
+        },
+        "elapsedMsMedian": 40.92,
+        "cpuMsMedian": 139
+      },
+      "list-sort-oldest": {
+        "logicalReads": 66,
+        "readsByTable": {
+          "Requests": 66
+        },
+        "elapsedMsMedian": 0.0,
+        "cpuMsMedian": 0
+      },
+      "list-deep-page": {
+        "logicalReads": 1916,
+        "readsByTable": {
+          "Worktable": 0,
+          "Requests": 1916
+        },
+        "elapsedMsMedian": 179.08,
+        "cpuMsMedian": 515
+      },
+      "summary-all": {
+        "logicalReads": 389,
+        "readsByTable": {
+          "Requests": 389
+        },
+        "elapsedMsMedian": 24.4,
+        "cpuMsMedian": 24
+      },
+      "summary-filtered": {
+        "logicalReads": 66,
+        "readsByTable": {
+          "Requests": 66
+        },
+        "elapsedMsMedian": 8.13,
+        "cpuMsMedian": 5
+      },
+      "history": {
+        "logicalReads": 15,
+        "readsByTable": {
+          "Worktable": 0,
+          "RequestStatusHistory": 15
+        },
+        "elapsedMsMedian": 0.0,
+        "cpuMsMedian": 0
+      },
+      "lookups": {
+        "logicalReads": 2307,
+        "readsByTable": {
+          "Requests": 2307,
+          "Worktable": 0,
+          "Workfile": 0
+        },
+        "elapsedMsMedian": 73.22,
+        "cpuMsMedian": 72
+      }
+    },
+    "without:IX_Requests_Priority_Status": {
+      "list-default": {
+        "logicalReads": 304,
+        "readsByTable": {
+          "Requests": 304
+        },
+        "elapsedMsMedian": 12.2,
+        "cpuMsMedian": 10
+      },
+      "list-status": {
+        "logicalReads": 104,
+        "readsByTable": {
+          "Requests": 104
+        },
+        "elapsedMsMedian": 4.06,
+        "cpuMsMedian": 2
+      },
+      "list-status-priority-date": {
+        "logicalReads": 638,
+        "readsByTable": {
+          "Requests": 638
+        },
+        "elapsedMsMedian": 8.13,
+        "cpuMsMedian": 4
+      },
+      "list-handler": {
+        "logicalReads": 83,
+        "readsByTable": {
+          "Requests": 83
+        },
+        "elapsedMsMedian": 0.0,
+        "cpuMsMedian": 0
+      },
+      "list-organization": {
+        "logicalReads": 1857,
+        "readsByTable": {
+          "Requests": 1857,
+          "Worktable": 0
+        },
+        "elapsedMsMedian": 32.54,
+        "cpuMsMedian": 31
+      },
+      "list-search": {
+        "logicalReads": 1388,
+        "readsByTable": {
+          "Requests": 1388
+        },
+        "elapsedMsMedian": 28.51,
+        "cpuMsMedian": 26
+      },
+      "list-search-rare": {
+        "logicalReads": 1573,
+        "readsByTable": {
+          "Requests": 1573
+        },
+        "elapsedMsMedian": 32.53,
+        "cpuMsMedian": 30
+      },
+      "list-sort-updated": {
+        "logicalReads": 1916,
+        "readsByTable": {
+          "Worktable": 0,
+          "Requests": 1916
+        },
+        "elapsedMsMedian": 38.91,
+        "cpuMsMedian": 139
+      },
+      "list-sort-oldest": {
+        "logicalReads": 66,
+        "readsByTable": {
+          "Requests": 66
+        },
+        "elapsedMsMedian": 0.0,
+        "cpuMsMedian": 0
+      },
+      "list-deep-page": {
+        "logicalReads": 1916,
+        "readsByTable": {
+          "Worktable": 0,
+          "Requests": 1916
+        },
+        "elapsedMsMedian": 176.6,
+        "cpuMsMedian": 515
+      },
+      "summary-all": {
+        "logicalReads": 476,
+        "readsByTable": {
+          "Requests": 476,
+          "Worktable": 0,
+          "Workfile": 0
+        },
+        "elapsedMsMedian": 32.52,
+        "cpuMsMedian": 30
+      },
+      "summary-filtered": {
+        "logicalReads": 476,
+        "readsByTable": {
+          "Requests": 476
+        },
+        "elapsedMsMedian": 20.32,
+        "cpuMsMedian": 18
+      },
+      "history": {
+        "logicalReads": 15,
+        "readsByTable": {
+          "Worktable": 0,
+          "RequestStatusHistory": 15
+        },
+        "elapsedMsMedian": 0.0,
+        "cpuMsMedian": 0
+      },
+      "lookups": {
+        "logicalReads": 1123,
+        "readsByTable": {
+          "Requests": 1123
+        },
+        "elapsedMsMedian": 44.69,
+        "cpuMsMedian": 44
+      }
+    },
+    "without:IX_Requests_Status_CreatedAt_Id": {
+      "list-default": {
+        "logicalReads": 217,
+        "readsByTable": {
+          "Requests": 217
+        },
+        "elapsedMsMedian": 12.2,
+        "cpuMsMedian": 9
+      },
+      "list-status": {
+        "logicalReads": 600,
+        "readsByTable": {
+          "Requests": 600
+        },
+        "elapsedMsMedian": 8.13,
+        "cpuMsMedian": 8
+      },
+      "list-status-priority-date": {
+        "logicalReads": 1039,
+        "readsByTable": {
+          "Workfile": 0,
+          "Worktable": 0,
+          "Requests": 1039
+        },
+        "elapsedMsMedian": 24.39,
+        "cpuMsMedian": 21
+      },
+      "list-handler": {
+        "logicalReads": 83,
+        "readsByTable": {
+          "Requests": 83
+        },
+        "elapsedMsMedian": 4.07,
+        "cpuMsMedian": 0
+      },
+      "list-organization": {
+        "logicalReads": 1857,
+        "readsByTable": {
+          "Requests": 1857,
+          "Worktable": 0
+        },
+        "elapsedMsMedian": 32.52,
+        "cpuMsMedian": 31
+      },
+      "list-search": {
+        "logicalReads": 1388,
+        "readsByTable": {
+          "Requests": 1388
+        },
+        "elapsedMsMedian": 28.46,
+        "cpuMsMedian": 25
+      },
+      "list-search-rare": {
+        "logicalReads": 1573,
+        "readsByTable": {
+          "Requests": 1573
+        },
+        "elapsedMsMedian": 32.57,
+        "cpuMsMedian": 30
+      },
+      "list-sort-updated": {
+        "logicalReads": 1916,
+        "readsByTable": {
+          "Worktable": 0,
+          "Requests": 1916
+        },
+        "elapsedMsMedian": 40.66,
+        "cpuMsMedian": 139
+      },
+      "list-sort-oldest": {
+        "logicalReads": 66,
+        "readsByTable": {
+          "Requests": 66
+        },
+        "elapsedMsMedian": 0.0,
+        "cpuMsMedian": 0
+      },
+      "list-deep-page": {
+        "logicalReads": 1916,
+        "readsByTable": {
+          "Worktable": 0,
+          "Requests": 1916
+        },
+        "elapsedMsMedian": 176.01,
+        "cpuMsMedian": 520
+      },
+      "summary-all": {
+        "logicalReads": 302,
+        "readsByTable": {
+          "Worktable": 0,
+          "Workfile": 0,
+          "Requests": 302
+        },
+        "elapsedMsMedian": 32.51,
+        "cpuMsMedian": 30
+      },
+      "summary-filtered": {
+        "logicalReads": 66,
+        "readsByTable": {
+          "Requests": 66
+        },
+        "elapsedMsMedian": 8.13,
+        "cpuMsMedian": 6
+      },
+      "history": {
+        "logicalReads": 15,
+        "readsByTable": {
+          "Worktable": 0,
+          "RequestStatusHistory": 15
+        },
+        "elapsedMsMedian": 0.0,
+        "cpuMsMedian": 0
+      },
+      "lookups": {
+        "logicalReads": 1123,
+        "readsByTable": {
+          "Requests": 1123
+        },
+        "elapsedMsMedian": 44.72,
+        "cpuMsMedian": 42
+      }
+    },
+    "without:IX_RequestStatusHistory_RequestId_ChangedAt": {
+      "list-default": {
+        "logicalReads": 217,
+        "readsByTable": {
+          "Requests": 217
+        },
+        "elapsedMsMedian": 8.14,
+        "cpuMsMedian": 9
+      },
+      "list-status": {
+        "logicalReads": 104,
+        "readsByTable": {
+          "Requests": 104
+        },
+        "elapsedMsMedian": 4.07,
+        "cpuMsMedian": 1
+      },
+      "list-status-priority-date": {
+        "logicalReads": 638,
+        "readsByTable": {
+          "Requests": 638
+        },
+        "elapsedMsMedian": 4.08,
+        "cpuMsMedian": 4
+      },
+      "list-handler": {
+        "logicalReads": 83,
+        "readsByTable": {
+          "Requests": 83
+        },
+        "elapsedMsMedian": 0.0,
+        "cpuMsMedian": 0
+      },
+      "list-organization": {
+        "logicalReads": 1857,
+        "readsByTable": {
+          "Requests": 1857,
+          "Worktable": 0
+        },
+        "elapsedMsMedian": 28.45,
+        "cpuMsMedian": 31
+      },
+      "list-search": {
+        "logicalReads": 1388,
+        "readsByTable": {
+          "Requests": 1388
+        },
+        "elapsedMsMedian": 28.42,
+        "cpuMsMedian": 26
+      },
+      "list-search-rare": {
+        "logicalReads": 1573,
+        "readsByTable": {
+          "Requests": 1573
+        },
+        "elapsedMsMedian": 32.52,
+        "cpuMsMedian": 30
+      },
+      "list-sort-updated": {
+        "logicalReads": 1916,
+        "readsByTable": {
+          "Worktable": 0,
+          "Requests": 1916
+        },
+        "elapsedMsMedian": 38.99,
+        "cpuMsMedian": 138
+      },
+      "list-sort-oldest": {
+        "logicalReads": 66,
+        "readsByTable": {
+          "Requests": 66
+        },
+        "elapsedMsMedian": 0.0,
+        "cpuMsMedian": 0
+      },
+      "list-deep-page": {
+        "logicalReads": 1916,
+        "readsByTable": {
+          "Worktable": 0,
+          "Requests": 1916
+        },
+        "elapsedMsMedian": 175.97,
+        "cpuMsMedian": 515
+      },
+      "summary-all": {
+        "logicalReads": 389,
+        "readsByTable": {
+          "Requests": 389
+        },
+        "elapsedMsMedian": 24.39,
+        "cpuMsMedian": 24
+      },
+      "summary-filtered": {
+        "logicalReads": 66,
+        "readsByTable": {
+          "Requests": 66
+        },
+        "elapsedMsMedian": 4.07,
+        "cpuMsMedian": 5
+      },
+      "history": {
+        "logicalReads": 953,
+        "readsByTable": {
+          "Worktable": 0,
+          "RequestStatusHistory": 953
+        },
+        "elapsedMsMedian": 12.2,
+        "cpuMsMedian": 11
+      },
+      "lookups": {
+        "logicalReads": 1123,
+        "readsByTable": {
+          "Requests": 1123
+        },
+        "elapsedMsMedian": 44.71,
+        "cpuMsMedian": 42
+      }
+    }
+  },
+  "experiments": {
+    "search-before-searchtext": {
+      "logicalReads": 2445,
+      "readsByTable": {
+        "Requests": 2445
+      },
+      "elapsedMsMedian": 358.2,
+      "cpuMsMedian": 356,
+      "planSummary": [
+        {
+          "operators": [
+            "Clustered Index Scan"
+          ],
+          "indexes": [
+            "PK_Requests"
+          ]
+        },
+        {
+          "operators": [
+            "Index Scan",
+            "Clustered Index Seek"
+          ],
+          "indexes": [
+            "IX_Requests_CreatedAt_Id",
+            "PK_Requests"
+          ]
+        }
+      ],
+      "description": "The free-text search as it was before the SearchText column (LIKE on Title OR OrganizationName, linguistic collation), for comparison with list-search"
+    },
+    "search-before-searchtext-rare": {
+      "logicalReads": 45590,
+      "readsByTable": {
+        "Requests": 45590
+      },
+      "elapsedMsMedian": 419.65,
+      "cpuMsMedian": 418,
+      "planSummary": [
+        {
+          "operators": [
+            "Clustered Index Scan"
+          ],
+          "indexes": [
+            "PK_Requests"
+          ]
+        },
+        {
+          "operators": [
+            "Index Scan",
+            "Clustered Index Seek"
+          ],
+          "indexes": [
+            "IX_Requests_CreatedAt_Id",
+            "PK_Requests"
+          ]
+        }
+      ],
+      "description": "The free-text search as it was before the SearchText column (LIKE on Title OR OrganizationName, linguistic collation), for comparison with list-search-rare"
+    },
+    "deep-page-keyset": {
+      "logicalReads": 321,
+      "readsByTable": {
+        "PerfKeysetStart": 1,
+        "Requests": 320
+      },
+      "elapsedMsMedian": 0.0,
+      "cpuMsMedian": 0,
+      "planSummary": [
+        {
+          "operators": [
+            "Table Scan"
+          ],
+          "indexes": []
+        },
+        {
+          "operators": [
+            "Index Seek",
+            "Clustered Index Seek"
+          ],
+          "indexes": [
+            "IX_Requests_Title_Id",
+            "PK_Requests"
+          ]
+        }
+      ],
+      "description": "The same deep page (sorted by title) with keyset paging: continue after the last row of the previous page instead of skipping 49,900 rows, with an index on (Title, Id)"
+    }
+  }
+}

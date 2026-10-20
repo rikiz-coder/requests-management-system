@@ -1,0 +1,135 @@
+Executed DbCommand (38ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [Requests] AS [r]
+----------------------------------------------------------------------------------------------------
+Executed DbCommand (13ms) [Parameters=[@p='?' (DbType = Int32), @p1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT [r].[Id], [r].[Title], [r].[OrganizationName], [r].[Status], [r].[Priority], [r].[AssignedTo], [r].[CreatedAt], [r].[UpdatedAt], [r].[RowVersion]
+FROM [Requests] AS [r]
+ORDER BY [r].[CreatedAt] DESC, [r].[Id] DESC
+OFFSET @p ROWS FETCH NEXT @p1 ROWS ONLY
+----------------------------------------------------------------------------------------------------
+Executed DbCommand (3ms) [Parameters=[@values1='?' (Size = 1) (DbType = Byte)], CommandType='Text', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [Requests] AS [r]
+WHERE [r].[Status] = @values1
+----------------------------------------------------------------------------------------------------
+Executed DbCommand (2ms) [Parameters=[@values1='?' (Size = 1) (DbType = Byte), @p='?' (DbType = Int32), @p2='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT [r].[Id], [r].[Title], [r].[OrganizationName], [r].[Status], [r].[Priority], [r].[AssignedTo], [r].[CreatedAt], [r].[UpdatedAt], [r].[RowVersion]
+FROM [Requests] AS [r]
+WHERE [r].[Status] = @values1
+ORDER BY [r].[CreatedAt] DESC, [r].[Id] DESC
+OFFSET @p ROWS FETCH NEXT @p2 ROWS ONLY
+----------------------------------------------------------------------------------------------------
+Executed DbCommand (7ms) [Parameters=[@values2='?' (Size = 1) (DbType = Byte), @values3='?' (Size = 1) (DbType = Byte), @values11='?' (Size = 1) (DbType = Byte), @fromUtc='?' (Scale = 3) (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [Requests] AS [r]
+WHERE [r].[Status] IN (@values2, @values3) AND [r].[Priority] = @values11 AND [r].[CreatedAt] >= @fromUtc
+----------------------------------------------------------------------------------------------------
+Executed DbCommand (3ms) [Parameters=[@values2='?' (Size = 1) (DbType = Byte), @values3='?' (Size = 1) (DbType = Byte), @values11='?' (Size = 1) (DbType = Byte), @fromUtc='?' (Scale = 3) (DbType = DateTime2), @p='?' (DbType = Int32), @p4='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT [r].[Id], [r].[Title], [r].[OrganizationName], [r].[Status], [r].[Priority], [r].[AssignedTo], [r].[CreatedAt], [r].[UpdatedAt], [r].[RowVersion]
+FROM [Requests] AS [r]
+WHERE [r].[Status] IN (@values2, @values3) AND [r].[Priority] = @values11 AND [r].[CreatedAt] >= @fromUtc
+ORDER BY [r].[CreatedAt] DESC, [r].[Id] DESC
+OFFSET @p ROWS FETCH NEXT @p4 ROWS ONLY
+----------------------------------------------------------------------------------------------------
+Executed DbCommand (2ms) [Parameters=[@handler='?' (Size = 100)], CommandType='Text', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [Requests] AS [r]
+WHERE [r].[AssignedTo] = @handler
+----------------------------------------------------------------------------------------------------
+Executed DbCommand (3ms) [Parameters=[@handler='?' (Size = 100), @p='?' (DbType = Int32), @p2='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT [r].[Id], [r].[Title], [r].[OrganizationName], [r].[Status], [r].[Priority], [r].[AssignedTo], [r].[CreatedAt], [r].[UpdatedAt], [r].[RowVersion]
+FROM [Requests] AS [r]
+WHERE [r].[AssignedTo] = @handler
+ORDER BY [r].[CreatedAt] DESC, [r].[Id] DESC
+OFFSET @p ROWS FETCH NEXT @p2 ROWS ONLY
+----------------------------------------------------------------------------------------------------
+Executed DbCommand (4ms) [Parameters=[@organization_startswith='?' (Size = 200)], CommandType='Text', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [Requests] AS [r]
+WHERE [r].[OrganizationName] LIKE @organization_startswith ESCAPE N'\'
+----------------------------------------------------------------------------------------------------
+Executed DbCommand (36ms) [Parameters=[@organization_startswith='?' (Size = 200), @p='?' (DbType = Int32), @p2='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT [r].[Id], [r].[Title], [r].[OrganizationName], [r].[Status], [r].[Priority], [r].[AssignedTo], [r].[CreatedAt], [r].[UpdatedAt], [r].[RowVersion]
+FROM [Requests] AS [r]
+WHERE [r].[OrganizationName] LIKE @organization_startswith ESCAPE N'\'
+ORDER BY [r].[CreatedAt] DESC, [r].[Id] DESC
+OFFSET @p ROWS FETCH NEXT @p2 ROWS ONLY
+----------------------------------------------------------------------------------------------------
+Executed DbCommand (28ms) [Parameters=[@pattern_contains='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [Requests] AS [r]
+WHERE [r].[SearchText] LIKE @pattern_contains ESCAPE N'\'
+----------------------------------------------------------------------------------------------------
+Executed DbCommand (3ms) [Parameters=[@pattern_contains='?' (Size = 4000), @p='?' (DbType = Int32), @p2='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT [r].[Id], [r].[Title], [r].[OrganizationName], [r].[Status], [r].[Priority], [r].[AssignedTo], [r].[CreatedAt], [r].[UpdatedAt], [r].[RowVersion]
+FROM [Requests] AS [r]
+WHERE [r].[SearchText] LIKE @pattern_contains ESCAPE N'\'
+ORDER BY [r].[CreatedAt] DESC, [r].[Id] DESC
+OFFSET @p ROWS FETCH NEXT @p2 ROWS ONLY
+----------------------------------------------------------------------------------------------------
+Executed DbCommand (194ms) [Parameters=[@p='?' (DbType = Int32), @p1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT [r].[Id], [r].[Title], [r].[OrganizationName], [r].[Status], [r].[Priority], [r].[AssignedTo], [r].[CreatedAt], [r].[UpdatedAt], [r].[RowVersion]
+FROM [Requests] AS [r]
+ORDER BY [r].[Title], [r].[Id]
+OFFSET @p ROWS FETCH NEXT @p1 ROWS ONLY
+----------------------------------------------------------------------------------------------------
+Executed DbCommand (14ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT [r].[Status], COUNT(*)
+FROM [Requests] AS [r]
+GROUP BY [r].[Status]
+----------------------------------------------------------------------------------------------------
+Executed DbCommand (14ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT [r].[Priority], COUNT(*)
+FROM [Requests] AS [r]
+GROUP BY [r].[Priority]
+----------------------------------------------------------------------------------------------------
+Executed DbCommand (5ms) [Parameters=[@values1='?' (Size = 1) (DbType = Byte)], CommandType='Text', CommandTimeout='30']
+SELECT [r].[Status], COUNT(*)
+FROM [Requests] AS [r]
+WHERE [r].[Priority] = @values1
+GROUP BY [r].[Status]
+----------------------------------------------------------------------------------------------------
+Executed DbCommand (4ms) [Parameters=[@values1='?' (Size = 1) (DbType = Byte)], CommandType='Text', CommandTimeout='30']
+SELECT [r].[Priority], COUNT(*)
+FROM [Requests] AS [r]
+WHERE [r].[Priority] = @values1
+GROUP BY [r].[Priority]
+----------------------------------------------------------------------------------------------------
+Executed DbCommand (2ms) [Parameters=[@id='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT TOP(1) [r].[Id], [r].[AssignedTo], [r].[CreatedAt], [r].[OrganizationName], [r].[Priority], [r].[RowVersion], [r].[SearchText], [r].[Status], [r].[Title], [r].[UpdatedAt]
+FROM [Requests] AS [r]
+WHERE [r].[Id] = @id
+----------------------------------------------------------------------------------------------------
+Executed DbCommand (2ms) [Parameters=[@id='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT CASE
+WHEN EXISTS (
+SELECT 1
+FROM [Requests] AS [r]
+WHERE [r].[Id] = @id) THEN CAST(1 AS bit)
+ELSE CAST(0 AS bit)
+END
+----------------------------------------------------------------------------------------------------
+Executed DbCommand (2ms) [Parameters=[@id='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT [r].[Id], [r].[PreviousStatus], [r].[NewStatus], [r].[ChangedAt], [r].[ChangedBy]
+FROM [RequestStatusHistory] AS [r]
+WHERE [r].[RequestId] = @id
+ORDER BY [r].[ChangedAt] DESC, [r].[Id] DESC
+----------------------------------------------------------------------------------------------------
+Executed DbCommand (21ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT [r0].[AssignedTo]
+FROM (
+SELECT DISTINCT [r].[AssignedTo]
+FROM [Requests] AS [r]
+WHERE [r].[AssignedTo] IS NOT NULL
+) AS [r0]
+ORDER BY [r0].[AssignedTo]
+----------------------------------------------------------------------------------------------------
+Executed DbCommand (13ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT [r0].[OrganizationName]
+FROM (
+SELECT DISTINCT [r].[OrganizationName]
+FROM [Requests] AS [r]
+) AS [r0]
+ORDER BY [r0].[OrganizationName]
+----------------------------------------------------------------------------------------------------
