@@ -54,6 +54,7 @@ docker compose run --rm seeder --reseed --count 250000  # כמות אחרת
 | 4 | לוחצים על פנייה (או מקלידים את המספר שלה בחיפוש, למשל `99236`) | נפתחת מגירה: פרטים, כפתורים רק למעברים המותרים, והיסטוריה | 2, 3 |
 | 5 | **409:** מעתיקים את הכתובת (כולל `id=`) ללשונית שנייה. מעדכנים סטטוס בלשונית אחת, ואז בשנייה (בלי לרענן) | בלשונית השנייה נפתח חלון: מה המצב עכשיו, מי שינה ומתי, ו"להעביר בכל זאת" / "הצגת המצב העדכני". שום דבר לא נדרס | 2, 5 |
 | 6 | **Bulk:** מסמנים כמה פניות. בלשונית אחרת משנים אחת מהן. חוזרים ובוחרים סטטוס ב"עדכון כל הנבחרות" | "עודכנו N פניות; לא עודכנה 1", עם הסיבה ("עודכנה בינתיים על ידי משתמש אחר") וקישור לפנייה | 4 |
+| 4א | במגירה לוחצים על "פתיחה במסך מלא" (ריבוע עם חץ, ליד ה־X) | עמוד מלא `/requests/<מספר>`: פרטים ועדכון סטטוס, ציר זמן של ההיסטוריה, כמה זמן מאז שנוצרה ובסטטוס הנוכחי, וקישורים לפניות נוספות של הארגון ושל המטפל. "חזרה לרשימה" (או Back בדפדפן) מחזיר לאותה רשימה, עם אותו סינון ועמוד | 3, 5 |
 | 7 | `docker compose stop api`, ואז משנים סינון; `docker compose start api` ולוחצים "ניסיון חוזר" | באנר אחד "אין חיבור לשרת", ואחרי החזרה הכול נטען מחדש | 5 |
 | 8 | http://localhost:5080/swagger | כל ה־Endpoints, כולל קודי השגיאה | 11 |
 
@@ -106,13 +107,13 @@ dotnet test     # דורש ‎.NET 10 SDK ו־Docker פתוח: בדיקות ה־
 ```powershell
 cd frontend\requests-web
 npm ci
-npx ng test --watch=false   # 16 בדיקות לקוח (Vitest) – דורש Node.js
+npx ng test --watch=false   # 21 בדיקות לקוח (Vitest) – דורש Node.js
 ```
 
 * **50 בדיקות Unit:** כללי מעברי סטטוס, שינוי סטטוס בישות, ולידציה (דפדוף, תאריכים, ערכים לא מוכרים, Bulk), פענוח `If-Match`, מחולל הנתונים.
 * **35 בדיקות Integration** מול SQL Server 2022 אמיתי (Testcontainers) דרך ה־API עצמו (`WebApplicationFactory`): סינון, חיפוש, מיון ודפדוף מול ספירה ישירה בבסיס הנתונים; 400 לכל פרמטר לא תקין; Summary ו־Invalidation של ה־Cache; ‏404/409/422/428; **5 עדכונים מקבילים עם אותו `ETag` – בדיוק אחד מצליח ונכתבת שורת היסטוריה אחת**; Bulk עם הצלחה חלקית; Migrations, אינדקסים ו־Seed חוזר.
 
-* **16 בדיקות לקוח (Vitest):** ה־Store – Debounce של החיפוש (בקשה אחת אחרי שההקלדה נעצרת), ביטול בקשה קודמת (`switchMap`), שמירת הנתונים הקודמים בזמן טעינה, סיכום שלא נטען מחדש בדפדוף, וסנכרון עם הכתובת; ההמרה בין הכתובת לשאילתה; הודעות השגיאה; ובמגירת הפרטים – `If-Match`, פתיחת חלון ה־409 ו"להעביר בכל זאת" מול הגרסה החדשה.
+* **21 בדיקות לקוח (Vitest):** ה־Store – Debounce של החיפוש (בקשה אחת אחרי שההקלדה נעצרת), ביטול בקשה קודמת (`switchMap`), שמירת הנתונים הקודמים בזמן טעינה, סיכום שלא נטען מחדש בדפדוף, וסנכרון עם הכתובת; ההמרה בין הכתובת לשאילתה; הודעות השגיאה; ובמגירת הפרטים – `If-Match`, פתיחת חלון ה־409 ו"להעביר בכל זאת" מול הגרסה החדשה; המסך המלא – מעבר אליו עם מצב הרשימה, "חזרה לרשימה" שמשחזרת אותו, הקישורים לרשימות המסוננות, "הפנייה לא נמצאה" וחישובי הזמנים מההיסטוריה.
 
 בדיקות אמיתיות מול SQL Server ולא מול ספק ה־InMemory של EF: הוא לא אוכף `rowversion`, ובדיקת Concurrency מולו הייתה עוברת גם אם המנגנון שבור.
 
@@ -128,7 +129,7 @@ npx ng test --watch=false   # 16 בדיקות לקוח (Vitest) – דורש Nod
 | 5 Angular | [`requests-list.store.ts`](frontend/requests-web/src/app/features/requests/requests-list.store.ts) (URL, Debounce, `switchMap`), [`requests-page`](frontend/requests-web/src/app/features/requests/requests-page.component.ts), [`request-details`](frontend/requests-web/src/app/features/requests/request-details.component.ts) + [`conflict-dialog`](frontend/requests-web/src/app/features/requests/conflict-dialog.component.ts) (409), [`interceptors`](frontend/requests-web/src/app/core/http/interceptors.ts) | `requests-list.store.spec`, `request-details.component.spec`, `request-query.spec`, `error-messages.spec`; מסלול הדפדפן | [מבנה – הלקוח](#מבנה-הפתרון) |
 | 6 ביצועים על 100K | [`ServiceRequestConfiguration`](backend/src/RequestsManagement.Infrastructure/Persistence/Configurations/ServiceRequestConfiguration.cs) (אינדקסים), [`measure.py`](scripts/perf/measure.py) | [`measure.sql`](docs/performance/measure.sql), [`runs/`](docs/performance/runs) | [PERFORMANCE.md](docs/PERFORMANCE.md) |
 | 7 Cache | [`MemorySummaryCache`](backend/src/RequestsManagement.Infrastructure/Caching/MemorySummaryCache.cs), [`RequestQueryService.GetSummaryAsync`](backend/src/RequestsManagement.Application/Requests/Services/RequestQueryService.cs) | `SummaryAndDetailsTests` | [Cache](#cache) |
-| 8 בדיקות, כולל Integration ו־Concurrency | [`tests/`](backend/tests), `*.spec.ts` | 50 Unit + 35 Integration + 16 לקוח | [בדיקות אוטומטיות](#בדיקות-אוטומטיות) |
+| 8 בדיקות, כולל Integration ו־Concurrency | [`tests/`](backend/tests), `*.spec.ts` | 50 Unit + 35 Integration + 21 לקוח | [בדיקות אוטומטיות](#בדיקות-אוטומטיות) |
 | 9 תכנון | – | – | [PLAN.md](PLAN.md) |
 | 10 איכות קוד, שגיאות, Logging | [`Program.cs`](backend/src/RequestsManagement.Api/Program.cs), [`GlobalExceptionHandler`](backend/src/RequestsManagement.Api/ErrorHandling/GlobalExceptionHandler.cs) | `Invalid_parameters_return_400_naming_the_field`, `Unknown_request_returns_404_problem_details` | [Logging](#logging) |
 | 11 תיעוד: הרצה, טכנולוגיות, מבנה, DB ואינדקסים, Concurrency ו־Bulk, Cache, החלטות, מגבלות, AI | – | – | README זה ([טכנולוגיות](#טכנולוגיות-וגרסאות), [מבנה](#מבנה-הפתרון), [החלטות](#החלטות-טכנולוגיות-משמעותיות), [מגבלות](#מגבלות-ידועות), [AI](#שימוש-בכלי-ai)), [INSTALL.he.md](docs/INSTALL.he.md), Swagger |
@@ -185,6 +186,8 @@ frontend/requests-web/src/app/
     requests-page.component.ts           Container – מחבר את ה־Store לרכיבים
     request-filters / requests-table / summary-panel / bulk-actions-bar   רכיבי תצוגה (input/output)
     request-details + conflict-dialog    מגירת פרטים, עדכון סטטוס, היסטוריה, 409
+    request-full-page                    פנייה במסך מלא (/requests/:id), מצב הרשימה נשמר בכתובת
+    details/                             החלקים המשותפים למגירה ולמסך המלא: RequestDetailsState (טעינה, עדכון, 409/422), פרטים, כפתורי מעבר, היסטוריה, חישובי זמנים
   shared/                                באנר חיבור, תג סטטוס
 docs/                                    התקנה, ביצועים, צילומי מסך
 scripts/                                 התקנה ב־Windows, הדגמת 409, מדידות ביצועים, בדיקת ממשק
@@ -194,7 +197,7 @@ scripts/                                 התקנה ב־Windows, הדגמת 409,
 
 **הלקוח:**
 * `RequestsApiService` – HTTP בלבד, בלי מצב. ‏`RequestsListStore` – מצב הרשימה. **הכתובת היא מקור האמת:** כל פעולה (חיפוש, סינון, מיון, עמוד, פנייה פתוחה) מעדכנת את ה־URL, והרשימה נטענת לפיו, כך שרענון, קישור וכפתור Back מציגים את אותה תצוגה. כל טעינה עוברת `switchMap`, שמבטל בקשה קודמת שעוד לא חזרה; החיפוש עובר `debounceTime(350)`.
-* `RequestsPageComponent` מחבר בין ה־Store לרכיבים. ‏`RequestFilters`, `RequestsTable`, `SummaryPanel`, `BulkActionsBar` – רכיבי תצוגה (`input()` / `output()`) בלי גישה ל־HTTP. ‏`RequestDetails` טוען את הפנייה וההיסטוריה שלה לפי המזהה (`rxResource`).
+* `RequestsPageComponent` מחבר בין ה־Store לרכיבים. ‏`RequestFilters`, `RequestsTable`, `SummaryPanel`, `BulkActionsBar` – רכיבי תצוגה (`input()` / `output()`) בלי גישה ל־HTTP. המגירה (`RequestDetails`) והמסך המלא (`RequestFullPage`) בנויים מאותם רכיבים ומאותו `RequestDetailsState`, שטוען את הפנייה וההיסטוריה לפי המזהה (`rxResource`) ומטפל בעדכון, ב־409 וב־422 – בלי שכפול קוד. המסך המלא מקבל את מצב הרשימה בכתובת (`/requests/42?status=Waiting&page=2`), ולכן "חזרה לרשימה" מחזירה לאותה תצוגה.
 * מצבי מסך: טעינה (פס התקדמות, והטבלה הקודמת מעומעמת במקום להיעלם), אין תוצאות, שגיאה עם "נסו שוב", ובאנר אחד "אין חיבור לשרת" במקום שגיאה בכל חלק.
 * הודעות שנבנות ממה שהשרת החזיר: איזה שדה לא תקין, אילו מעברים מותרים, וקוד לפנייה לתמיכה בתקלת שרת.
 * ממשק בעברית מימין לשמאל, Angular Material.
@@ -412,10 +415,10 @@ Requests                                  RequestStatusHistory
 | תכנון | ניתח את קובץ הדרישות, הציע תוכנית עבודה ושאל שאלות פתוחות | בחירת SQL Server, הגשה ב־GitHub עם Docker Compose, והצלחה חלקית ב־Bulk. בחרתי אילו רעיונות לאמץ מ־README של פרויקט דומה (ETag/If-Match, 409 מפורט, מצב ב־URL, תיעוד ביצועים) ואילו לא (Token נגד מרוץ ב־Cache, Seed אוטומטי ב־API, Aggregation נוספת). הוחלט לא להוסיף "נוצר על ידי" (לא נדרש, וההיסטוריה שומרת מי שינה) |
 | Backend ובסיס נתונים | כתב את השכבות, ה־Migrations, ה־Seeder והאינדקסים | 100,000 הרשומות נבדקו ב־SSMS. הדגמת ה־409 הורצה ב־PowerShell אצלי |
 | ביצועים | כתב את סקריפט המדידה, הריץ אותו ב־CI וניתח את ה־Execution Plans | הוחלט להשאיר את שיפור החיפוש כהצעה מתועדת ומדודה, בלי לממש |
-| Angular | כתב את ה־Store, הרכיבים, הבדיקות ומסלול הבדיקה בדפדפן (Playwright) | עברתי על הממשק: חיפוש, סינון, רענון, 409 משתי לשוניות, Bulk. ביקשתי תוספת: חיפוש לפי מספר פנייה |
+| Angular | כתב את ה־Store, הרכיבים, הבדיקות ומסלול הבדיקה בדפדפן (Playwright) | עברתי על הממשק: חיפוש, סינון, רענון, 409 משתי לשוניות, Bulk. ביקשתי תוספות: חיפוש לפי מספר פנייה, סינון בלחיצה על ריבועי העדיפות, ומסך מלא לפנייה |
 | תיעוד | כתב את ה־README, מדריך ההתקנה ודוח הביצועים | ה־README נבנה במבנה "מדריך לבודק" לפי דוגמה שבחרתי; עברתי על הנימוקים |
 
-**איך נבדק מה שהכלי כתב:** כל שינוי עבר ב־GitHub Actions: Build, בדיקה שה־Migrations תואמות למודל, 50 בדיקות Unit, ‏35 Integration מול SQL Server אמיתי, ‏16 בדיקות לקוח, ואז הרצת Docker Compose מלאה עם 100,000 פניות, קריאות ל־API, הממשק דרך nginx והדגמת ה־409. המספרים בדוח הביצועים נמדדו בפועל, וקובצי ה־`.sqlplan` מצורפים.
+**איך נבדק מה שהכלי כתב:** כל שינוי עבר ב־GitHub Actions: Build, בדיקה שה־Migrations תואמות למודל, 50 בדיקות Unit, ‏35 Integration מול SQL Server אמיתי, ‏21 בדיקות לקוח, ואז הרצת Docker Compose מלאה עם 100,000 פניות, קריאות ל־API, הממשק דרך nginx והדגמת ה־409. המספרים בדוח הביצועים נמדדו בפועל, וקובצי ה־`.sqlplan` מצורפים.
 
 **טעויות של הכלי שנתפסו בבדיקה ותוקנו:**
 * **אינדקסים שלא תאמו את המיון** – המדידה הראשונה הראתה סריקה ומיון של כל הטבלה, כי האינדקסים לא כללו את `Id DESC` שבסוף ה־`ORDER BY`. תוקן ב־Migration ‏`TuneIndexes` (2,067→221 reads).

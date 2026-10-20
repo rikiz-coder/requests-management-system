@@ -25,7 +25,7 @@ import {
   RequestSummary,
 } from '../../core/api/models';
 import { RequestsApiService } from '../../core/api/requests-api.service';
-import { DEFAULT_QUERY, parseQuery, parseSelectedId, sameValue, toFilter, toQueryParams } from './request-query';
+import { DEFAULT_QUERY, listParams, parseQuery, parseSelectedId, sameValue, toFilter, toQueryParams } from './request-query';
 
 export interface LoadState<T> {
   loading: boolean;
@@ -147,6 +147,11 @@ export class RequestsListStore {
 
   openRequest(id: number): void {
     this.navigate({ id });
+  }
+
+  /** The full-page view of a request; the list query travels along, so "back to the list" restores it. */
+  openFullPage(id: number): void {
+    void this.router.navigate(['/requests', id], { queryParams: listParams(this.query()) });
   }
 
   closeRequest(): void {

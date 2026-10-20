@@ -9,6 +9,12 @@ function unwrap(error: unknown): unknown {
   return error instanceof HttpErrorResponse ? error : ((error as { cause?: unknown } | null)?.cause ?? error);
 }
 
+/** True for a 404 from the API (also when wrapped by a signal resource). */
+export function isNotFound(error: unknown): boolean {
+  error = unwrap(error);
+  return error instanceof HttpErrorResponse && error.status === 404;
+}
+
 export function problemOf(error: unknown): ProblemDetails | null {
   error = unwrap(error);
   return error instanceof HttpErrorResponse && error.error && typeof error.error === 'object'

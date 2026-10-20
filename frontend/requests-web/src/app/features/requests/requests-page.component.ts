@@ -28,7 +28,8 @@ import { SummaryPanelComponent } from './summary-panel.component';
       <mat-drawer mode="over" position="end" class="drawer" [opened]="store.selectedId() !== null"
                   (closedStart)="store.selectedId() !== null && store.closeRequest()">
         @if (store.selectedId(); as id) {
-          <app-request-details [requestId]="id" (close)="store.closeRequest()" (changed)="store.refresh()" />
+          <app-request-details [requestId]="id" (close)="store.closeRequest()" (changed)="store.refresh()"
+                               (expand)="store.openFullPage(id)" />
         }
       </mat-drawer>
 

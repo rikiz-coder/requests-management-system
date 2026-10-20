@@ -67,6 +67,11 @@ export function toQueryParams(patch: Partial<RequestQuery> & { id?: number | nul
   return params;
 }
 
+/** The list query as URL params with defaults and empty values left out – for links to the list (or from it). */
+export function listParams(query: RequestQuery): Params {
+  return Object.fromEntries(Object.entries(toQueryParams(query)).filter(([, value]) => value !== null));
+}
+
 export function sameValue<T>(a: T, b: T): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
 }

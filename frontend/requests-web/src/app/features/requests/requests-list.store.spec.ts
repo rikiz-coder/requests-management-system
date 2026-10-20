@@ -141,6 +141,16 @@ describe('RequestsListStore', () => {
     expect(url()).toEqual({ priority: ['Low'] });
   });
 
+  it('"open in full page" goes to /requests/:id and carries the list query, without the drawer id', () => {
+    const { store, router } = setup({ status: ['Waiting'], page: '2', sortBy: 'title', sortDirection: 'asc', id: '42' });
+
+    store.openFullPage(42);
+
+    expect(router.navigate).toHaveBeenLastCalledWith(['/requests', 42], {
+      queryParams: { status: ['Waiting'], page: 2, sortBy: 'title', sortDirection: 'asc' },
+    });
+  });
+
   it('opening a request puts its id in the URL; refresh() reloads list and summary', () => {
     const { store, api, url } = setup();
 

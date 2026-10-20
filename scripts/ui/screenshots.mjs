@@ -51,7 +51,7 @@ await step('search-debounce', async () => {
 await step('search-by-number', async () => {
   await page.goto(`${BASE}/?search=99236&id=99236`);
   await rows().first().waitFor();
-  await page.locator('app-request-details .details h3').waitFor();
+  await page.locator('app-request-details h3').waitFor();
   note(`Search "99236": ${await rows().count()} row(s), first: ${(await rows().first().innerText()).replace(/\s+/g, ' ')}; paginator: ${await page.locator('.mat-mdc-paginator-range-label').innerText()}`);
   await shot('09-search-by-number');
 });
@@ -126,6 +126,33 @@ await step('bulk', async () => {
   note(`Bulk result: ${(await page.locator('mat-dialog-container').innerText()).replace(/\s+/g, ' ')}`);
   await shot('06-bulk-result');
   await page.keyboard.press('Escape');
+});
+
+await step('full-page', async () => {
+  await page.goto(`${BASE}/?status=Waiting&page=2`);
+  await rows().first().waitFor();
+  await rows().first().click();
+  await page.locator('app-request-details h3').waitFor();
+  await page.locator('app-request-details button[aria-label="פתיחה במסך מלא"]').click();
+  await page.waitForURL(/\/requests\/\d+/);
+  await page.locator('app-request-full-page app-request-history .entry, app-request-full-page app-request-history p').first().waitFor();
+  note(`Full page URL: ${decodeURIComponent(page.url())}; facts: ${(await page.locator('app-request-full-page .facts').innerText()).replace(/\s+/g, ' ')}`);
+  await shot('10-full-page');
+  await page.goBack();
+  await page.waitForURL((url) => url.pathname === '/');
+  note(`Browser Back returns to: ${decodeURIComponent(page.url())}`);
+  await page.goForward();
+  await page.waitForURL(/\/requests\/\d+/);
+  await page.locator('app-request-full-page a', { hasText: 'חזרה לרשימה' }).first().click();
+  await page.waitForURL((url) => url.pathname === '/');
+  await rows().first().waitFor();
+  note(`"Back to the list": ${decodeURIComponent(page.url())}; range: ${await page.locator('.mat-mdc-paginator-range-label').innerText()}`);
+  await page.goForward();
+  await page.waitForURL(/\/requests\/\d+/);
+  await page.setViewportSize({ width: 420, height: 900 });
+  await page.locator('app-request-full-page .columns').waitFor();
+  await shot('11-full-page-narrow');
+  await page.setViewportSize({ width: 1440, height: 900 });
 });
 
 await step('offline-banner', async () => {
