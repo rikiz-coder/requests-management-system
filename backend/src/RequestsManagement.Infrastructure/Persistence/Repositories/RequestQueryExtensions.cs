@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using RequestsManagement.Application.Requests.Contracts;
 using RequestsManagement.Application.Requests.Entities;
+using RequestsManagement.Infrastructure.Persistence.Configurations;
 
 namespace RequestsManagement.Infrastructure.Persistence.Repositories;
 
@@ -49,16 +50,19 @@ internal static class RequestQueryExtensions
 
         if (!string.IsNullOrWhiteSpace(filter.Search))
         {
-            // Translated to LIKE '%term%' (EF escapes %, _ and [ in the term).
-            // A term made only of digits is also treated as a request number (Id = n, a primary-key match).
+            // "Contains" in the title or the organization name, through the SearchText column (upper case,
+            // binary collation – see ServiceRequestConfiguration). Translated to LIKE '%TERM%'; EF escapes
+            // %, _ and [ in the term. A term made only of digits also matches the request number (Id = n).
             var term = filter.Search.Trim();
+            var pattern = term.ToUpperInvariant();
             if (term.All(char.IsAsciiDigit) && int.TryParse(term, out var id))
             {
-                query = query.Where(r => r.Id == id || r.Title.Contains(term) || r.OrganizationName.Contains(term));
+                query = query.Where(r => r.Id == id
+                    || EF.Property<string>(r, ServiceRequestConfiguration.SearchText).Contains(pattern));
             }
             else
             {
-                query = query.Where(r => r.Title.Contains(term) || r.OrganizationName.Contains(term));
+                query = query.Where(r => EF.Property<string>(r, ServiceRequestConfiguration.SearchText).Contains(pattern));
             }
         }
 

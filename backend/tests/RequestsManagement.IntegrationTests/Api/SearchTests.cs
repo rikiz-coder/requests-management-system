@@ -63,6 +63,44 @@ public class SearchTests(ApiFixture api)
     }
 
     [Fact]
+    public async Task Search_never_matches_across_the_title_and_the_organization()
+    {
+        var sample = await api.QueryDbAsync(db => db.Requests.AsNoTracking().OrderBy(r => r.Id).Skip(77).FirstAsync(Ct));
+        var term = $"{sample.Title.Split(' ')[^1]} {sample.OrganizationName.Split(' ')[0]}"; // end of title + start of organization
+
+        var page = await GetAsync($"/api/requests?search={Uri.EscapeDataString(term)}&pageSize=100");
+
+        var expected = await api.QueryDbAsync(db => db.Requests.CountAsync(
+            r => r.Title.Contains(term) || r.OrganizationName.Contains(term), Ct));
+        Assert.Equal(expected, page.TotalCount);
+        Assert.DoesNotContain(page.Items, r => r.Id == sample.Id && !r.Title.Contains(term) && !r.OrganizationName.Contains(term));
+    }
+
+    [Fact]
+    public async Task Search_ignores_the_case_of_latin_letters()
+    {
+        var created = DateTime.UtcNow.AddYears(-5);
+        var request = new ServiceRequest
+        {
+            Title = "Payroll Report Q3", OrganizationName = "Acme Logistics Ltd", Status = RequestStatus.New,
+            Priority = RequestPriority.Low, CreatedAt = created, UpdatedAt = created,
+        };
+        await api.QueryDbAsync(async db => { db.Requests.Add(request); return await db.SaveChangesAsync(Ct); });
+        try
+        {
+            foreach (var term in new[] { "payroll", "PAYROLL", "acme log" })
+            {
+                var page = await GetAsync($"/api/requests?search={Uri.EscapeDataString(term)}&pageSize=100");
+                Assert.Contains(page.Items, r => r.Id == request.Id);
+            }
+        }
+        finally
+        {
+            await api.QueryDbAsync(db => db.Requests.Where(r => r.Id == request.Id).ExecuteDeleteAsync(Ct));
+        }
+    }
+
+    [Fact]
     public async Task Search_by_number_finds_the_request_with_that_id()
     {
         var id = await api.QueryDbAsync(db => db.Requests.OrderBy(r => r.Id).Skip(1234).Select(r => r.Id).FirstAsync(Ct));

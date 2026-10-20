@@ -133,28 +133,21 @@ def set_indexes(indexes, enabled: bool, password: str):
 
 EXPERIMENTS = [
     {
-        "name": "search-binary-collation",
-        "description": "Search on a persisted computed column UPPER(Title + ' ' + OrganizationName) with a binary "
-                       "collation, covered by its own narrow index",
-        "setup": """
-ALTER TABLE dbo.Requests ADD SearchText AS
-    (CAST(UPPER(Title + N' ' + OrganizationName) AS nvarchar(401)) COLLATE Latin1_General_100_BIN2) PERSISTED;
-CREATE INDEX IX_Requests_SearchText ON dbo.Requests (SearchText);
-""",
+        "name": "search-before-searchtext",
+        "description": "The free-text search as it was before the SearchText column (LIKE on Title OR "
+                       "OrganizationName, linguistic collation), for comparison with list-search",
+        "setup": "DBCC FREEPROCCACHE;",
         "sql": """
 EXEC sp_executesql N'SELECT COUNT(*)
 FROM [Requests] AS [r]
-WHERE [r].[SearchText] LIKE @term_contains ESCAPE N''\\''', N'@term_contains nvarchar(402)', @term_contains = N'%היתר%';
+WHERE [r].[Title] LIKE @term_contains ESCAPE N''\\'' OR [r].[OrganizationName] LIKE @term_contains ESCAPE N''\\''', N'@term_contains nvarchar(200)', @term_contains = N'%היתר%';
 EXEC sp_executesql N'SELECT [r].[Id], [r].[Title], [r].[OrganizationName], [r].[Status], [r].[Priority], [r].[AssignedTo], [r].[CreatedAt], [r].[UpdatedAt], [r].[RowVersion]
 FROM [Requests] AS [r]
-WHERE [r].[SearchText] LIKE @term_contains ESCAPE N''\\''
+WHERE [r].[Title] LIKE @term_contains ESCAPE N''\\'' OR [r].[OrganizationName] LIKE @term_contains ESCAPE N''\\''
 ORDER BY [r].[CreatedAt] DESC, [r].[Id] DESC
-OFFSET @p ROWS FETCH NEXT @p0 ROWS ONLY', N'@term_contains nvarchar(402),@p int,@p0 int', @term_contains = N'%היתר%', @p = 0, @p0 = 20;
+OFFSET @p ROWS FETCH NEXT @p0 ROWS ONLY', N'@term_contains nvarchar(200),@p int,@p0 int', @term_contains = N'%היתר%', @p = 0, @p0 = 20;
 """,
-        "teardown": """
-DROP INDEX IX_Requests_SearchText ON dbo.Requests;
-ALTER TABLE dbo.Requests DROP COLUMN SearchText;
-""",
+        "teardown": "SELECT 1;",
     },
     {
         "name": "deep-page-keyset",

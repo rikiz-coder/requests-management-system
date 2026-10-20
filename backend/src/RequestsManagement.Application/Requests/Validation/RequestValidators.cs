@@ -16,7 +16,10 @@ public class RequestFilterValidator<T> : AbstractValidator<T>
         RuleForEach(f => f.Priority).IsInEnum().WithMessage("Unknown priority '{PropertyValue}'.");
         RuleFor(f => f.OrganizationName).MaximumLength(RequestFieldLimits.OrganizationNameMaxLength);
         RuleFor(f => f.AssignedTo).MaximumLength(RequestFieldLimits.PersonNameMaxLength);
-        RuleFor(f => f.Search).MaximumLength(MaxSearchLength);
+        RuleFor(f => f.Search)
+            .MaximumLength(MaxSearchLength)
+            .Must(s => s is null || !s.Any(char.IsControl))
+            .WithMessage("'search' must not contain control characters.");
         RuleFor(f => f.CreatedTo)
             .GreaterThanOrEqualTo(f => f.CreatedFrom)
             .When(f => f.CreatedFrom is not null && f.CreatedTo is not null)

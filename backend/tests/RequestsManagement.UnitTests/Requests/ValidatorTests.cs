@@ -52,6 +52,14 @@ public class ValidatorTests
     }
 
     [Fact]
+    public void Search_with_control_characters_is_rejected()
+    {
+        var result = new RequestQueryValidator().Validate(new RequestQuery { Search = "היתר\u001Fאורן" });
+
+        Assert.Contains(result.Errors, e => e.PropertyName == nameof(RequestQuery.Search));
+    }
+
+    [Fact]
     public void Valid_bulk_command_passes() =>
         Assert.True(new BulkUpdateStatusCommandValidator().Validate(Bulk([new(1, ValidVersion), new(2, ValidVersion)])).IsValid);
 
