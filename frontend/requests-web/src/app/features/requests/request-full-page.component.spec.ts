@@ -55,7 +55,7 @@ describe('RequestFullPageComponent', () => {
   it('shows "not found" for a request that does not exist', async () => {
     const { fixture, http } = setup('999999');
     http.expectOne('/api/requests/999999').flush({ status: 404 }, { status: 404, statusText: 'Not Found' });
-    http.match('/api/requests/999999/history').forEach((r) => r.flush([]));
+    // forkJoin cancels the history request once the request itself fails.
     await fixture.whenStable();
     fixture.detectChanges();
 
