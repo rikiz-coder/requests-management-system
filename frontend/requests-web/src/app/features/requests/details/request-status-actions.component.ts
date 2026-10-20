@@ -23,6 +23,7 @@ import { CurrentUserService } from '../../../core/user/current-user.service';
   `,
   styles: `
     :host { display: block; }
+    h4 { margin: 0 0 12px; }
     .buttons { display: flex; gap: 8px; flex-wrap: wrap; }
     .hint { color: var(--mat-sys-on-surface-variant); font-size: 13px; }
   `,

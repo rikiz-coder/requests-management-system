@@ -23,6 +23,7 @@ import { StatusBadgeComponent } from '../../../shared/status-badge.component';
   `,
   styles: `
     :host { display: block; }
+    h3 { margin: 0 0 12px; }
     dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 0; }
     dt { color: var(--mat-sys-on-surface-variant); }
     dd { margin: 0; }

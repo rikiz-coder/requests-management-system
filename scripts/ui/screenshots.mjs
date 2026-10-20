@@ -136,6 +136,7 @@ await step('full-page', async () => {
   await page.locator('app-request-details button[aria-label="פתיחה במסך מלא"]').click();
   await page.waitForURL(/\/requests\/\d+/);
   await page.locator('app-request-full-page app-request-history .entry, app-request-full-page app-request-history p').first().waitFor();
+  const fullUrl = page.url();
   note(`Full page URL: ${decodeURIComponent(page.url())}; facts: ${(await page.locator('app-request-full-page .facts').innerText()).replace(/\s+/g, ' ')}`);
   await shot('10-full-page');
   await page.goBack();
@@ -147,9 +148,8 @@ await step('full-page', async () => {
   await page.waitForURL((url) => url.pathname === '/');
   await rows().first().waitFor();
   note(`"Back to the list": ${decodeURIComponent(page.url())}; range: ${await page.locator('.mat-mdc-paginator-range-label').innerText()}`);
-  await page.goForward();
-  await page.waitForURL(/\/requests\/\d+/);
   await page.setViewportSize({ width: 420, height: 900 });
+  await page.goto(fullUrl);
   await page.locator('app-request-full-page .columns').waitFor();
   await shot('11-full-page-narrow');
   await page.setViewportSize({ width: 1440, height: 900 });
