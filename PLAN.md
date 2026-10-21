@@ -1,7 +1,7 @@
 # PLAN – מערכת לניהול פניות (מבדק Full Stack)
 
 > המסמך מתרגם את דרישות המבדק לתוכנית עבודה: ארכיטקטורה, חוזה API, משימות עם תלויות והערכות מאמץ, וטבלת קישור בין כל דרישה למשימות שמכסות אותה.
-> הוא נשמר ב־repo ומתעדכן במהלך הפיתוח. בסוף כל משימה הסטטוס בטבלה מתעדכן.
+> הוא נשמר ב־repo ועודכן במהלך הפיתוח: סטטוס כל משימה, משימות שנוספו בדרך (מסומנות "לא תוכנן"), ושינויים מהתכנון המקורי (מסומנים במקומם).
 
 ---
 
@@ -14,21 +14,24 @@
 ├─ docs/
 │  ├─ INSTALL.he.md             ← התקנת סביבה ב־Windows
 │  ├─ PERFORMANCE.md            ← מדידות, אינדקסים, Bottlenecks (דרישה 6)
+│  ├─ screenshots/              ← צילומי מסך ממסלול הבדיקה בדפדפן
 │  └─ performance/
 │     ├─ measure.sql            ← סקריפט מדידה להרצה חוזרת
-│     └─ plans/                 ← Execution Plans בפועל (.sqlplan), לפני ואחרי כל אינדקס
-├─ scripts/                     ← התקנה ובדיקת סביבה ב־Windows
-├─ docker-compose.yml           ← sqlserver + api + web + seeder
-├─ .github/workflows/ci.yml     ← Build + Tests בכל Push
+│     └─ runs/                  ← תוצאות ו־Execution Plans בפועל (.sqlplan) של כל הרצת מדידה
+├─ scripts/                     ← התקנה ובדיקת סביבה ב־Windows, הדגמת 409, מדידות ביצועים, בדיקת ממשק בדפדפן
+├─ docker-compose.yml           ← sqlserver + seeder + api + web
+├─ .github/workflows/           ← CI בכל Push, ו־workflows ליצירת Migrations, למדידות ולבדיקת הממשק
 ├─ backend/
 │  ├─ RequestsManagement.sln
 │  ├─ src/
 │  │  ├─ RequestsManagement.Api/             ← HTTP בלבד: Controllers, ETag/If-Match, ProblemDetails, הרכבת DI
 │  │  ├─ RequestsManagement.Application/     ← הלוגיקה, בלי EF Core ובלי ASP.NET Core
 │  │  │    Entities/      ← ServiceRequest, RequestStatusHistory, StatusTransitions
-│  │  │    Contracts/     ← DTOs, פרמטרי שאילתה, ולידטורים
+│  │  │    Contracts/     ← DTOs ופרמטרי שאילתה
+│  │  │    Validation/    ← ולידטורים (FluentValidation)
 │  │  │    Services/      ← שליפה, עדכון (כולל Bulk), Summary
 │  │  │    Abstractions/  ← IRequestRepository, ISummaryCache (ממומשים ב־Infrastructure)
+│  │  │    Exceptions/    ← NotFound, Conflict, InvalidTransition – מתורגמים ל־404/409/422
 │  │  └─ RequestsManagement.Infrastructure/  ← EF Core: DbContext, Configurations ואינדקסים, Migrations, Repository, Cache
 │  ├─ tools/RequestsManagement.Seeder/       ← יצירה חוזרת של 100,000 רשומות
 │  └─ tests/
@@ -100,13 +103,13 @@
 | GET | `/api/requests` | רשימה עם סינון, חיפוש, מיון ודפדוף | 200 `PagedResult<RequestListItemDto>`, 400 |
 | GET | `/api/requests/{id}` | פנייה בודדת, כולל `allowedNextStatuses`, וכותרת `ETag` עם הגרסה | 200, 404 |
 | GET | `/api/requests/summary` | Aggregations (מקבל את אותם פרמטרי סינון) | 200, 400 |
-| PATCH | `/api/requests/{id}/status` | עדכון סטטוס, עם כותרת `If-Match` | 200 `RequestDto` + `ETag` חדש, 400, 404, **409**, 422, 428 |
+| PATCH | `/api/requests/{id}/status` | עדכון סטטוס, עם כותרת `If-Match` | 200 `RequestDetailsDto` + `ETag` חדש, 400, 404, **409**, 422, 428 |
 | GET | `/api/requests/{id}/history` | היסטוריית שינויים | 200, 404 |
-| POST | `/api/requests/bulk/status` | עדכון של עד 100 פניות | 200 `BulkStatusUpdateResult`, 400 |
+| POST | `/api/requests/bulk/status` | עדכון של עד 100 פניות | 200 `BulkUpdateStatusResult`, 400 |
 | GET | `/api/lookups` | רשימות מטפלים וארגונים לטופסי הסינון ולבחירת "משתמש נוכחי" | 200 |
 
 ### פרמטרים של `GET /api/requests`
-`page` (ברירת מחדל 1, טווח 1–100,000) · `pageSize` (ברירת מחדל 20, טווח 1–100) · `status` (רשימה, למשל `status=New&status=Waiting`) · `priority` (רשימה) · `organizationName` (מתחיל ב־) · `assignedTo` (שם מדויק) · `createdFrom` / `createdTo` (ובתנאי `createdFrom <= createdTo`) · `search` (עד 100 תווים) · `sortBy` ∈ {`createdAt`, `updatedAt`, `priority`, `status`, `title`, `organizationName`} · `sortDirection` ∈ {`asc`, `desc`}
+`page` (ברירת מחדל 1, טווח 1–100,000) · `pageSize` (ברירת מחדל 20, טווח 1–100) · `status` (רשימה, למשל `status=New&status=Waiting`) · `priority` (רשימה) · `organizationName` (מתחיל ב־) · `assignedTo` (שם מדויק) · `createdFrom` / `createdTo` (ובתנאי `createdFrom <= createdTo`) · `search` (עד 100 תווים; מספר בלבד מוצא גם את הפנייה עם המזהה הזה – נוסף ב־T5.9) · `sortBy` ∈ {`createdAt`, `updatedAt`, `priority`, `status`, `title`, `organizationName`} · `sortDirection` ∈ {`asc`, `desc`}
 
 - מיון יציב: תמיד מתווסף `Id` כ־Tie-breaker, כדי שדפים לא "יקפצו".
 - `sortBy` עובר Whitelist ולא נבנה כטקסט חופשי, כך שאין חשש ל־SQL Injection.
@@ -136,27 +139,27 @@ Content-Type: application/json
 | `If-Match` חסר | **428** Precondition Required |
 | `If-Match: *` או ערך שאינו גרסה תקינה | **400**. `*` פירושו "דרוס כל מה שיש", בדיוק מה שהמנגנון נועד למנוע |
 | הפנייה לא קיימת | **404** |
-| מעבר אסור לפי מכונת המצבים | **422** עם `currentStatus` ו־`allowedNextStatuses` |
+| מעבר אסור לפי מכונת המצבים | **422** עם `currentStatus` ו־`allowedStatuses` |
 | הגרסה לא עדכנית (עדכון מתחרה) | **409** עם `currentState` (הפנייה כפי שהיא עכשיו) ו־`lastChange` (מי שינה, מה ומתי), כדי שה־UI יוכל להסביר למשתמש מה קרה |
 
-**409 ולא 412:** ‏412 הוא הקוד הצמוד לכישלון `If-Match`. בחרנו 409 כי מבחינת הלקוח זו התנגשות עם המצב הנוכחי של המשאב, שאותה הוא יכול לפתור ולשלוח שוב (ההגדרה של 409 ב־RFC 9110). כך גם ב־Bulk, שבו אין `If-Match`, הפריט מקבל תוצאה `Conflict` באותו מושג. ההחלטה תנומק ב־README.
+**409 ולא 412:** ‏412 הוא הקוד הצמוד לכישלון `If-Match`. בחרנו 409 כי מבחינת הלקוח זו התנגשות עם המצב הנוכחי של המשאב, שאותה הוא יכול לפתור ולשלוח שוב (ההגדרה של 409 ב־RFC 9110). כך גם ב־Bulk, שבו אין `If-Match`, הפריט מקבל תוצאה `Conflict` באותו מושג. ההחלטה מנומקת ב־README.
 
 ### Bulk (Partial Success)
 ```json
 POST /api/requests/bulk/status
 X-User-Name: dana
 { "newStatus": "Completed",
-  "items": [ { "id": 1, "rowVersion": "..." }, { "id": 2, "rowVersion": "..." } ] }
+  "items": [ { "id": 1, "version": "..." }, { "id": 2, "version": "..." } ] }
 → 200
 { "requested": 2, "succeeded": 1, "failed": 1,
-  "results": [ { "id": 1, "outcome": "Updated", "rowVersion": "..." },
-               { "id": 2, "outcome": "Conflict", "message": "..." } ] }
+  "results": [ { "id": 1, "outcome": "Updated", "error": null, "version": "..." },
+               { "id": 2, "outcome": "Conflict", "error": "...", "version": null } ] }
 ```
 - `outcome` ∈ {`Updated`, `NotFound`, `Conflict`, `InvalidTransition`}.
 - כאן הגרסה נמצאת בגוף הבקשה, לכל פריט בנפרד: כותרת `If-Match` אחת לא יכולה לשאת 100 גרסאות.
 - תשובת **400** על הבקשה כולה: יותר מ־100 פריטים, רשימה ריקה, או מזהים כפולים.
 - מימוש: טוענים את כל הפניות בשאילתה אחת, ובודקים כל פריט לחוד (לא קיים, גרסה לא עדכנית, מעבר אסור). כל הפריטים התקינים נשמרים יחד בטרנזקציה אחת, כל אחד עם שורת ה־Audit שלו ועם בדיקת הגרסה שלו. אם פנייה השתנתה בין הקריאה לכתיבה, בסיס הנתונים דוחה את הטרנזקציה: מוציאים רק את הפנייה הזו (תוצאה `Conflict`) ושומרים שוב את השאר. כל סבב מוציא לפחות פנייה אחת, כך שהלולאה תמיד מסתיימת. (בתכנון המקורי: טרנזקציה לכל פריט. השינוי חוסך עד 100 סבבים מול בסיס הנתונים, עם אותה התנהגות כלפי הלקוח.)
-- התשובה היא 200 גם כשחלק מהפריטים נכשלו, כי הבקשה עובדה בהצלחה והתוצאה לכל פריט מופיעה בגוף התשובה. 207 Multi-Status הוא חלופה שתתועד.
+- התשובה היא 200 גם כשחלק מהפריטים נכשלו, כי הבקשה עובדה בהצלחה והתוצאה לכל פריט מופיעה בגוף התשובה. 207 Multi-Status נשקל, והנימוק לבחירה ב־200 מופיע ב־README.
 
 ---
 
@@ -173,7 +176,7 @@ X-User-Name: dana
 מעבר לאותו סטטוס נחשב מעבר לא חוקי ומחזיר 422. הכללים נמצאים במקום אחד ב־Domain (`StatusTransitions`), והשרת מחזיר `allowedNextStatuses` בכל פנייה, כך שה־UI מציג רק מעברים מותרים ולא מחזיק עותק משלו של הכללים.
 
 ### זהות המשנה (ChangedBy)
-המבדק לא דורש מערכת התחברות. ה־UI מציג בחירת "משתמש נוכחי" מתוך רשימת המטפלים, ושולח את השם בכותרת `X-User-Name` בכל עדכון. ערכי כותרות HTTP הם ASCII בלבד, ולכן שם בעברית נשלח מקודד (`encodeURIComponent`), והשרת מפענח אותו. השרת מוודא שהכותרת קיימת (אחרת 400) ושומר אותה ב־Audit. זו מגבלה ידועה שתתועד ב־README: בסביבת אמת הזהות תילקח מטוקן הזדהות (JWT) ולא מהלקוח.
+המבדק לא דורש מערכת התחברות. ה־UI מציג בחירת "משתמש נוכחי" מתוך רשימת המטפלים, ושולח את השם בכותרת `X-User-Name` בכל עדכון. ערכי כותרות HTTP הם ASCII בלבד, ולכן שם בעברית נשלח מקודד (`encodeURIComponent`), והשרת מפענח אותו. השרת מוודא שהכותרת קיימת (אחרת 400) ושומר אותה ב־Audit. זו מגבלה ידועה שמתועדת ב־README: בסביבת אמת הזהות תילקח מטוקן הזדהות (JWT) ולא מהלקוח.
 
 ### תהליך העדכון
 1. הלקוח שולח ב־`If-Match` את ה־`ETag` שקיבל בשליפה (ערך ה־`rowversion`).
@@ -190,7 +193,7 @@ X-User-Name: dana
 - **Expiration:** `AbsoluteExpiration` של 60 שניות, כרשת ביטחון.
 - **Invalidation:** כל עדכון סטטוס מוצלח, בודד או Bulk, מסיר את המפתח מה־Cache.
 - **מימוש:** `IMemoryCache` מאחורי ממשק `ISummaryCache`.
-- **הרחבה למספר מופעי שרת:** החלפת המימוש ל־`IDistributedCache` (Redis). המופע שמעדכן מוחק את המפתח המשותף, ואם יש גם Cache מקומי, נשלחת הודעת Invalidation ב־Redis Pub/Sub. אפשר גם להשתמש ב־HybridCache של .NET עם Tags. החלופה תתועד ולא תמומש, כדי לא להוסיף מורכבות שאין בה צורך.
+- **הרחבה למספר מופעי שרת:** החלפת המימוש ל־`IDistributedCache` (Redis). המופע שמעדכן מוחק את המפתח המשותף, ואם יש גם Cache מקומי, נשלחת הודעת Invalidation ב־Redis Pub/Sub. אפשר גם להשתמש ב־HybridCache של .NET עם Tags. החלופה מתועדת ולא ממומשת, כדי לא להוסיף מורכבות שאין בה צורך.
 
 ---
 
@@ -204,9 +207,9 @@ X-User-Name: dana
 - Actual Execution Plan: Seek מול Scan, ו־Key Lookups.
 - זמני תגובה של ה־API (ממוצע של כמה קריאות לכל תרחיש).
 
-**ראיות שנשמרות ב־repo:** הסקריפט `docs/performance/measure.sql` (מריץ את אותן שאילתות ש־EF Core מייצר, עם ובלי כל אינדקס), ו־Execution Plans בפועל (`.sqlplan`) לפני ואחרי כל אינדקס או תיקון, בתיקייה `docs/performance/plans/`. כל מספר ב־`PERFORMANCE.md` יגיע ממדידה, וה־SQL יילקח מהלוג של EF Core.
+**ראיות שנשמרות ב־repo:** הסקריפט `docs/performance/measure.sql` (מריץ את אותן שאילתות ש־EF Core מייצר, עם ובלי כל אינדקס), ו־Execution Plans בפועל (`.sqlplan`) של כל הרצה, בתיקייה `docs/performance/runs/`. כל מספר ב־`PERFORMANCE.md` מגיע ממדידה, וה־SQL נלקח מהלוג של EF Core.
 
-**Bottlenecks צפויים, שאת קיומם יש לאמת:**
+**Bottlenecks צפויים, שאת קיומם יש לאמת** (התוצאות ב־`docs/PERFORMANCE.md`; בפועל שופרו בעיקר סדר האינדקסים ב־T7.3 והחיפוש ב־T7.4):
 - `LIKE '%x%'` לא יכול להשתמש ב־Seek. **שיפור:** Full-Text Index, או חיפוש בתחילת מילה (`LIKE 'x%'`). (בפועל מומש שיפור אחר, עמודה מחושבת עם Collation בינארי – ראו T7.4.)
 - `COUNT(*)` על סינון רחב. **שיפור:** Cache או ספירה משוערת.
 - Offset עמוק. **שיפור:** Keyset Pagination.
@@ -221,13 +224,13 @@ X-User-Name: dana
 | יחידה | אחריות |
 |---|---|
 | `RequestsApiService` | קריאות HTTP בלבד, בלי State. שולח `If-Match` בעדכון |
-| `RequestsListStore` (Service) | State של הרשימה. **ה־URL הוא מקור האמת:** סינון, מיון, עמוד והפנייה הפתוחה נשמרים בכתובת, ורענון, קישור או Back מציגים את אותה תצוגה. שינוי בחיפוש עובר `debounceTime(300)` ו־`distinctUntilChanged`, וכל שינוי עובר `switchMap` שמבטל בקשה קודמת שעוד לא חזרה. מצב: `{ loading, error, data }` |
-| `SummaryStore` | טעינת ה־Aggregations לפי אותם סינונים, ורענון אחרי עדכון |
-| `RequestsPageComponent` (Container) | מחבר בין ה־Stores לרכיבי התצוגה |
-| `RequestsFiltersComponent` | חיפוש, סטטוס, עדיפות, ארגון, מטפל וטווח תאריכים (Presentational) |
+| `RequestsListStore` (Service) | State של הרשימה. **ה־URL הוא מקור האמת:** סינון, מיון, עמוד והפנייה הפתוחה נשמרים בכתובת, ורענון, קישור או Back מציגים את אותה תצוגה. שינוי בחיפוש עובר `debounceTime(350)` ו־`distinctUntilChanged`, וכל שינוי עובר `switchMap` שמבטל בקשה קודמת שעוד לא חזרה. מצב: `{ loading, error, data }`. אותו Store טוען גם את ה־Aggregations לפי אותם סינונים (בתכנון המקורי: `SummaryStore` נפרד; אוחדו כי שניהם נגזרים מאותה כתובת), ולא טוען אותן מחדש בדפדוף או במיון |
+| `RequestsPageComponent` (Container) | מחבר בין ה־Store לרכיבי התצוגה |
+| `RequestFiltersComponent` | חיפוש, סטטוס, עדיפות, ארגון, מטפל וטווח תאריכים (Presentational) |
 | `RequestsTableComponent` | טבלה, מיון, דפדוף ובחירה מרובה (Presentational) |
-| `SummaryPanelComponent` | הצגת ה־Aggregations |
-| `RequestDetailsDrawerComponent` | **מגירת פרטים** שנפתחת לצד הרשימה: פרטי הפנייה, עדכון סטטוס (רק מעברים מ־`allowedNextStatuses`) והיסטוריית השינויים |
+| `SummaryPanelComponent` | הצגת ה־Aggregations; לחיצה על סטטוס או עדיפות מסננת לפיהם |
+| `RequestDetailsComponent` | **מגירת פרטים** שנפתחת לצד הרשימה: פרטי הפנייה, עדכון סטטוס (רק מעברים מ־`allowedNextStatuses`) והיסטוריית השינויים |
+| `RequestFullPageComponent` | הפנייה במסך מלא (`/requests/:id`, נוסף ב־T5.10), עם אותם רכיבי פרטים כמו המגירה |
 | `ConflictDialogComponent` | חלון שנפתח ב־**409**: מה המצב עכשיו, מי שינה ומתי, ומה המשתמש ניסה לשמור. שתי פעולות: **"הצגת המצב העדכני"**, או **"להעביר בכל זאת"** (שליחה חוזרת מול הגרסה החדשה, רק אם המעבר עדיין מותר). המערכת לא מחליטה מי צודק, המשתמש מחליט |
 | `BulkActionsBarComponent` | פעולת Bulk והצגת תוצאה לכל פנייה, עם קישור לפנייה שלא עודכנה |
 | `CurrentUserService` + בורר בכותרת | "משתמש נוכחי", נשלח בכותרת `X-User-Name` |
@@ -316,7 +319,7 @@ X-User-Name: dana
 ### E8 – תיעוד והגשה
 | ID | משימה | מה נדרש | תוצר | תלוי ב־ | מאמץ | דרישה | סטטוס |
 |---|---|---|---|---|---|---|---|
-| T8.1 | README | בסגנון "מדריך לבודק": טבלת מסמכים, הרצה בדקות, מסלול בדיקה בממשק (מה עושים, מה אמור לקרות, איזו דרישה), הדגמת 409 משתי פקודות, טבלת "איפה כל דרישה" (קוד, בדיקות, תיעוד), פתרון תקלות. אחר כך: טכנולוגיות וגרסאות, מבנה, API, בסיס נתונים ואינדקסים, ביצועים, Concurrency, Bulk, Cache, שתי החלטות עם טבלת חלופות, מגבלות ידועות (השפעה שנמדדה, תיקון, הערכה), Logging, שימוש ב־AI | `README.md` | הכול | 4h | 11 | ✅ |
+| T8.1 | README | בסגנון "מדריך לבודק": טבלת מסמכים, הרצה בדקות, מסלול בדיקה בממשק (מה עושים, מה אמור לקרות, איזו דרישה), הדגמת 409 משתי פקודות, טבלת "איפה כל דרישה" (קוד, בדיקות, תיעוד), פתרון תקלות. אחר כך: טכנולוגיות וגרסאות, מבנה, API, בסיס נתונים ואינדקסים, ביצועים, Concurrency, Bulk, Cache, שתי החלטות עם טבלת חלופות, מגבלות ידועות (השפעה שנמדדה, תיקון, הערכה), Logging | `README.md` | הכול | 4h | 11 | ✅ |
 | T8.2 | Docker Compose מלא | API, Web (nginx) ו־Seeder, ובדיקה על מכונה נקייה (Runner חדש של GitHub Actions בכל Push, ומחשב Windows של המפתחת) | `docker compose up` עובד | T0.4, T5.7 | 2h | הגשה | ✅ |
 | T8.3 | ביקורת סופית מול מחוון הציון | מעבר על כל סעיף בדרישות ובטבלת ההערכה: מימוש, בדיקה ותיעוד שבודק יכול למצוא | טבלת "איפה כל דרישה" ב־README מלאה, בלי סעיפים פתוחים | T8.1, T8.2 | 1h | הכול | ✅ |
 
@@ -343,7 +346,7 @@ flowchart LR
   E7 --> E8
 ```
 
-**שלבי ביצוע (כל שלב מסתיים ב־Commit ובבדיקה שלך):**
+**שלבי ביצוע (כל שלב מסתיים ב־Commit, ב־CI ירוק ובבדיקה ידנית של המערכת):**
 1. **שלב א' – יסודות:** T0.2 ← T0.3 ← T0.4 ← T1.2 ← T1.3. אחרי השלב: DB עם 100 אלף רשומות ו־CI ירוק.
 2. **שלב ב' – Backend מלא:** T2.1 עד T2.5, אחריהן T3.1 עד T3.4, ואחריהן T4.1. במקביל: T6.1 ו־T6.2, ובדיקות T6.3 נכתבות ביחד עם הפיצ'רים.
 3. **שלב ג' – מדידת ביצועים:** T7.1 ו־T7.2. השלב בא מוקדם בכוונה, כדי שאם המדידה תדרוש שינוי אינדקסים, הוא ייעשה לפני ה־UI.
@@ -375,13 +378,8 @@ flowchart LR
 | נושא | מצב / פתרון |
 |---|---|
 | ChangedBy בלי הזדהות | ✅ הוחלט: `X-User-Name` (סעיף 4), מתועד כמגבלה ידועה |
-| **סביבת הבנייה של Claude** | ✅ נפתר: בסביבת הענן אין גישה ל־NuGet, npm ו־Docker Hub, ולכן כל Push ל־GitHub מריץ ב־**GitHub Actions** את ה־Build, הבדיקות והרצת Docker Compose מלאה עם 100,000 פניות. Migrations נוצרות ב־workflow ייעודי (`generate-migration.yml`). את מריצה מקומית עם Docker Desktop |
+| **סביבת בנייה בלי גישה לרשת** | ✅ נפתר: בסביבת הפיתוח בענן אין גישה ל־NuGet, npm ו־Docker Hub, ולכן כל Push ל־GitHub מריץ ב־**GitHub Actions** את ה־Build, הבדיקות והרצת Docker Compose מלאה עם 100,000 פניות. Migrations נוצרות ב־workflow ייעודי (`generate-migration.yml`). ההרצה המקומית היא עם Docker Desktop |
 | חשבון GitHub | ✅ `rikiz-coder/requests-management-system` (ציבורי), מחובר ומאפשר Push |
-| SQL Server על מחשבי Mac עם ARM | ה־Image רץ באמולציה. יתועד ב־README |
+| SQL Server על מחשבי Mac עם ARM | ה־Image רץ באמולציה. מתועד בפתרון התקלות ב־README |
 | מועד הגשה | סוף השבוע. כל המשימות, כולל T6.4, נכנסות לתוכנית |
 | רשת עם בדיקת תעבורה מוצפנת במחשב המפתחת | ✅ נפתר: בניית הלקוח הורידה גופנים בזמן הבנייה ונכשלה על התעודה; הבנייה כבר לא תלויה בהורדה הזו. מתועד בפתרון תקלות |
-
----
-
-## 11. שימוש בכלי AI
-מתועד ב־README, בפרק [שימוש בכלי AI](README.md#שימוש-בכלי-ai): מה עשה הכלי בכל תחום, מה הוחלט ונבדק ידנית, ואילו טעויות של הכלי נתפסו בבדיקות ותוקנו.
